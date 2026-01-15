@@ -72,7 +72,7 @@ export default function RegisterPage() {
             />
           </label>
           <label className="text-sm">
-            Password
+            Password (10+ chars, letters & numbers)
             <input
               className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm"
               value={password}

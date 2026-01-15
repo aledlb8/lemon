@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation"
 
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, isAdmin } from "@/lib/auth"
+import { isValidObjectId } from "@/lib/security"
 import { MediaModel } from "@/models/Media"
 import {
   Card,
@@ -44,6 +45,9 @@ function formatDate(date: Date) {
 
 export default async function FilePage({ params }: RouteContext) {
   const { id } = await params
+  if (!isValidObjectId(id)) {
+    notFound()
+  }
   await dbConnect()
   const media = await MediaModel.findById(id).lean()
   if (!media) {

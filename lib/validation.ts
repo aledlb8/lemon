@@ -19,5 +19,8 @@ export function isValidUsername(value: string) {
 }
 
 export function isValidPassword(value: string) {
-  return value.length >= 8
+  if (value.length < 10 || value.length > 128) return false
+  const hasLetter = /[A-Za-z]/.test(value)
+  const hasNumber = /\d/.test(value)
+  return hasLetter && hasNumber
 }

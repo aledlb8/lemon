@@ -106,7 +106,10 @@ export async function getSessionUser(): Promise<User | null> {
   }
 
   const user = await UserModel.findById(session.userId).lean()
-  return user ?? null
+  if (!user || isBanned(user)) {
+    return null
+  }
+  return user
 }
 
 export function isAdmin(user: User | null) {

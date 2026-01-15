@@ -19,6 +19,7 @@ Create a `.env.local` with:
 ```bash
 MONGODB_URI="mongodb+srv://..."
 BLOB_READ_WRITE_TOKEN="vercel_blob_token"
+APP_ORIGIN="https://your-domain.com"
 ```
 
 ## Admin access
@@ -42,9 +43,9 @@ Uploads inherit the user’s default visibility setting.
 ## Notes
 
 - Max upload size is 4.5MB.
-- Private files are served through `/api/media/:id/download`.
-- Vercel Blob objects are public by design; Lemon keeps private uploads unlisted
-  and only serves them through authenticated routes.
+- `APP_ORIGIN` is optional but recommended to avoid trusting the Host header.
+- Vercel Blob objects are public; Lemon keeps private uploads unlisted
+  and only serves them through `/api/media/:id/download`.
 
 ## Learn More
 

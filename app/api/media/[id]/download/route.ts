@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, isAdmin, isBanned } from "@/lib/auth"
+import { isValidObjectId, safeHeaderFilename } from "@/lib/security"
 import { MediaModel } from "@/models/Media"
 
 type RouteContext = { params: Promise<{ id: string }> }
@@ -10,6 +11,10 @@ export const runtime = "nodejs"
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   const { id } = await context.params
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "Invalid id." }, { status: 400 })
+  }
+
   await dbConnect()
   const media = await MediaModel.findById(id).lean()
   if (!media) {
@@ -49,8 +54,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   headers.set("content-type", response.headers.get("content-type") ?? media.contentType)
   headers.set(
     "content-disposition",
-    `inline; filename="${media.originalName.replace(/"/g, "")}"`
+    `inline; filename="${safeHeaderFilename(media.originalName)}"`
   )
+  headers.set("cache-control", "no-store")
 
   return new Response(response.body, { headers })
 }

@@ -5,6 +5,7 @@ import crypto from "crypto"
 import { dbConnect } from "@/lib/db"
 import { getBaseUrl } from "@/lib/http"
 import { hashUploadKey, isBanned } from "@/lib/auth"
+import { getClientIp, rateLimit } from "@/lib/security"
 import { MediaModel } from "@/models/Media"
 import { UserModel } from "@/models/User"
 
@@ -45,6 +46,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing upload key." }, { status: 401 })
   }
 
+  const clientIp = getClientIp(request)
+  const ipRate = rateLimit(`upload:${clientIp}`, {
+    windowMs: 60 * 1000,
+    limit: 15,
+  })
+  if (!ipRate.allowed) {
+    const retryAfter = Math.ceil((ipRate.resetAt - Date.now()) / 1000)
+    return NextResponse.json(
+      { error: "Too many uploads. Try again later." },
+      {
+        status: 429,
+        headers: { "retry-after": retryAfter.toString() },
+      }
+    )
+  }
+
   const file = formData.get("file")
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Missing file." }, { status: 400 })
@@ -62,9 +79,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid upload key." }, { status: 401 })
   }
 
-  const safeName = sanitizeFilename(file.name || "upload")
-  const extension = safeName.includes(".") ? safeName.split(".").pop() : "bin"
-  const uniqueName = `${crypto.randomUUID()}.${extension}`
+  const userRate = rateLimit(`upload:${user._id.toString()}`, {
+    windowMs: 60 * 1000,
+    limit: 20,
+  })
+  if (!userRate.allowed) {
+    const retryAfter = Math.ceil((userRate.resetAt - Date.now()) / 1000)
+    return NextResponse.json(
+      { error: "Upload limit reached. Try again later." },
+      {
+        status: 429,
+        headers: { "retry-after": retryAfter.toString() },
+      }
+    )
+  }
+
+  const safeName = sanitizeFilename(file.name || "upload").slice(0, 120)
+  const extension = safeName.includes(".")
+    ? safeName.split(".").pop()?.toLowerCase()
+    : "bin"
+  const safeExtension = extension && extension.length > 0 ? extension : "bin"
+  const uniqueName = `${crypto.randomUUID()}.${safeExtension}`
   const pathname = `${user._id.toString()}/${uniqueName}`
   const visibility = user.settings?.defaultVisibility ?? "public"
 
@@ -105,15 +140,20 @@ export async function POST(request: Request) {
   const responseFormat = new URL(request.url).searchParams.get("format")
   if (responseFormat === "text") {
     return new Response(fileUrl, {
-      headers: { "content-type": "text/plain; charset=utf-8" },
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "no-store",
+      },
     })
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     id: media._id.toString(),
     url: fileUrl,
     visibility,
     name: safeName,
     size: file.size,
   })
+  response.headers.set("cache-control", "no-store")
+  return response
 }

@@ -2,15 +2,16 @@ import { NextResponse } from "next/server"
 
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, isBanned } from "@/lib/auth"
+import { isSameOrigin } from "@/lib/security"
 import { UserModel } from "@/models/User"
 
 export async function GET() {
   const user = await getSessionUser()
-  if (!user) {
+  if (!user || isBanned(user)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     user: {
       id: user._id.toString(),
       email: user.email,
@@ -20,12 +21,17 @@ export async function GET() {
       hasUploadKey: Boolean(user.uploadKeyHash),
     },
   })
+  response.headers.set("cache-control", "no-store")
+  return response
 }
 
 export async function POST(request: Request) {
   const user = await getSessionUser()
   if (!user || isBanned(user)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
+  }
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "Invalid origin." }, { status: 403 })
   }
 
   const body = await request.json().catch(() => null)
@@ -44,5 +50,7 @@ export async function POST(request: Request) {
     { "settings.defaultVisibility": defaultVisibility }
   )
 
-  return NextResponse.json({ ok: true })
+  const response = NextResponse.json({ ok: true })
+  response.headers.set("cache-control", "no-store")
+  return response
 }

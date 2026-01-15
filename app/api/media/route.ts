@@ -12,7 +12,9 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url)
   const rawLimit = Number(url.searchParams.get("limit") ?? 50)
-  const limit = Number.isFinite(rawLimit) ? Math.min(rawLimit, 200) : 50
+  const limit = Number.isFinite(rawLimit)
+    ? Math.min(Math.max(rawLimit, 1), 200)
+    : 50
 
   await dbConnect()
   const media = await MediaModel.find({ userId: user._id })
@@ -20,7 +22,7 @@ export async function GET(request: Request) {
     .limit(limit)
     .lean()
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     media: media.map((item) => ({
       id: item._id.toString(),
       originalName: item.originalName,
@@ -30,4 +32,6 @@ export async function GET(request: Request) {
       createdAt: item.createdAt,
     })),
   })
+  response.headers.set("cache-control", "no-store")
+  return response
 }
