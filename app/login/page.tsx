@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation"
 import { useState, type FormEvent } from "react"
 import Link from "next/link"
+import { FormInput } from "@/components/ui/form-input"
+import { Button } from "@/components/ui/button"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -46,35 +48,28 @@ export default function LoginPage() {
           onSubmit={handleSubmit}
           className="border-border bg-card flex flex-col gap-4 rounded-2xl border p-6 shadow-sm"
         >
-          <label className="text-sm">
-            Email or username
-            <input
-              className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm"
-              value={identifier}
-              onChange={(event) => setIdentifier(event.target.value)}
-              autoComplete="username"
-              required
-            />
-          </label>
-          <label className="text-sm">
-            Password
-            <input
-              className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-          </label>
+          <FormInput
+            label="Email or username"
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
+            autoComplete="username"
+            required
+          />
+          <FormInput
+            label="Password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            type="password"
+            autoComplete="current-password"
+            required
+          />
           {error && <p className="text-destructive text-sm">{error}</p>}
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm transition disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
-          </button>
+          </Button>
         </form>
         <p className="text-muted-foreground text-center text-sm">
           New here?{" "}

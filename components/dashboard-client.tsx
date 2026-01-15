@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { formatSize } from "@/lib/formatting"
+import { EmptyState } from "@/components/ui/empty-state"
+import { MediaCard } from "@/components/media-card"
+import { AlertCard } from "@/components/ui/alert-card"
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import {
   IconKey,
   IconEye,
@@ -52,12 +57,6 @@ type DashboardClientProps = {
   media: MediaItem[]
 }
 
-function formatSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
-}
-
 export default function DashboardClient({ user, media }: DashboardClientProps) {
   const router = useRouter()
   const [items, setItems] = useState(media)
@@ -66,6 +65,7 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
   const [origin, setOrigin] = useState("")
   const [busyId, setBusyId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const { copyToClipboard, isCopied } = useCopyToClipboard()
 
   useEffect(() => {
     setOrigin(window.location.origin)
@@ -146,16 +146,10 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
           </div>
         </header>
 
-        {message && (
-          <Card className="border-destructive/50 bg-destructive/10">
-            <CardContent className="pt-6">
-              <p className="text-sm">{message}</p>
-            </CardContent>
-          </Card>
-        )}
+        {message && <AlertCard message={message} variant="error" />}
 
         <section className="grid gap-6 lg:grid-cols-2">
-          <Card>
+          <Card className="border-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <IconKey className="h-5 w-5" />
@@ -166,11 +160,31 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Button onClick={regenerateUploadKey} className="flex-1">
+                  <IconKey />
+                  Regenerate key
+                </Button>
+                <Button variant="outline" onClick={downloadShareXConfig} className="flex-1">
+                  <IconDownload />
+                  Download config
+                </Button>
+              </div>
               {uploadKey ? (
-                <div className="bg-muted/50 border-border relative rounded-lg border p-4">
-                  <code className="text-foreground text-sm break-all">
-                    {uploadKey}
-                  </code>
+                <div className="bg-muted/30 text-muted-foreground space-y-2 rounded-lg border border-dashed p-4 text-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 min-w-0 flex-1">
+                      <span className="font-medium shrink-0">Upload Key:</span>
+                      <code className="text-foreground break-all">{uploadKey}</code>
+                    </div>
+                    <Button
+                      onClick={() => copyToClipboard(uploadKey)}
+                      className="hover:bg-primary/80"
+                      aria-label="Copy upload key"
+                    >
+                      <IconCopy />
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="bg-muted/30 text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
@@ -178,31 +192,9 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="flex flex-wrap gap-2">
-              <Button onClick={regenerateUploadKey} size="sm">
-                <IconKey />
-                Regenerate key
-              </Button>
-              <Button variant="outline" onClick={downloadShareXConfig} size="sm">
-                <IconDownload />
-                Download config
-              </Button>
-              {uploadKey && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(uploadKey)
-                  }}
-                >
-                  <IconCopy />
-                  Copy key
-                </Button>
-              )}
-            </CardFooter>
           </Card>
 
-          <Card>
+          <Card className="border-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 {visibility === "public" ? (
@@ -264,67 +256,23 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
 
         <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.length === 0 && (
-            <Card className="col-span-full">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <IconUpload className="text-muted-foreground mb-4 h-12 w-12" />
-                <p className="text-muted-foreground mb-2 text-lg font-medium">
-                  No uploads yet
-                </p>
-                <p className="text-muted-foreground text-sm">
-                  Send something from ShareX to get started
-                </p>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={IconUpload}
+              title="No uploads yet"
+              description="Send something from ShareX to get started"
+            />
           )}
-          {items.map((item) => {
-            const isImage = item.contentType.startsWith("image/")
-            const downloadUrl = `/api/media/${item.id}/download`
-            return (
-              <Card key={item.id} className="group overflow-hidden transition-shadow hover:shadow-lg">
-                <div className="bg-muted/50 relative flex aspect-video items-center justify-center overflow-hidden">
-                  {isImage ? (
-                    <>
-                      <img
-                        src={downloadUrl}
-                        alt={item.originalName}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                        loading="lazy"
-                      />
-                      <div className="bg-background/80 absolute right-2 top-2 backdrop-blur-sm">
-                        <Badge variant="secondary" className="gap-1">
-                          <IconPhoto className="h-3 w-3" />
-                          Image
-                        </Badge>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <IconFileText className="text-muted-foreground h-12 w-12" />
-                      <Badge variant="outline" className="uppercase">
-                        {item.originalName.split(".").pop() ?? "file"}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-                <CardHeader className="pb-3">
-                  <CardTitle className="line-clamp-1 text-base">
-                    <Link href={`/file/${item.id}`} className="hover:underline font-bold text-primary">{item.originalName}</Link>
-                  </CardTitle>
-                  <CardDescription className="flex items-center gap-2">
-                    <span>{formatSize(item.size)}</span>
-                    <span>·</span>
-                    <Badge variant={item.visibility === "public" ? "default" : "secondary"} className="h-5 text-xs">
-                      {item.visibility === "public" ? (
-                        <IconEye className="h-3 w-3" />
-                      ) : (
-                        <IconEyeOff className="h-3 w-3" />
-                      )}
-                      {item.visibility}
-                    </Badge>
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter className="flex gap-2 pt-0">
-                  <Button variant="outline" size="sm" className="flex-1" asChild>
+          {items.map((item) => (
+            <MediaCard
+              key={item.id}
+              id={item.id}
+              originalName={item.originalName}
+              contentType={item.contentType}
+              size={item.size}
+              visibility={item.visibility}
+              actions={
+                <>
+                  <Button variant="outline" size="sm" className="flex-1 mt-4" asChild>
                     <Link href={`/file/${item.id}`}>
                       <IconEye />
                       View
@@ -333,16 +281,17 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
                   <Button
                     variant="destructive"
                     size="sm"
+                    className="mt-4"
                     onClick={() => handleDelete(item.id)}
                     disabled={busyId === item.id}
                   >
                     <IconTrash />
                     {busyId === item.id ? "Deleting..." : "Delete"}
                   </Button>
-                </CardFooter>
-              </Card>
-            )
-          })}
+                </>
+              }
+            />
+          ))}
         </section>
       </div>
     </main>

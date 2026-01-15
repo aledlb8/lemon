@@ -3,6 +3,9 @@
 import { useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { FormInput } from "@/components/ui/form-input"
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
+import { Button } from "@/components/ui/button"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -13,6 +16,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [uploadKey, setUploadKey] = useState<string | null>(null)
+  const { copyToClipboard, isCopied } = useCopyToClipboard()
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -51,54 +55,41 @@ export default function RegisterPage() {
           onSubmit={handleSubmit}
           className="border-border bg-card flex flex-col gap-4 rounded-2xl border p-6 shadow-sm"
         >
-          <label className="text-sm">
-            Email
-            <input
-              className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-            />
-          </label>
-          <label className="text-sm">
-            Username
-            <input
-              className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              autoComplete="username"
-              required
-            />
-          </label>
-          <label className="text-sm">
-            Password (10+ chars, letters & numbers)
-            <input
-              className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              type="password"
-              autoComplete="new-password"
-              required
-            />
-          </label>
-          <label className="text-sm">
-            Invite code
-            <input
-              className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm"
-              value={inviteCode}
-              onChange={(event) => setInviteCode(event.target.value)}
-              required
-            />
-          </label>
+          <FormInput
+            label="Email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+            required
+          />
+          <FormInput
+            label="Username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            autoComplete="username"
+            required
+          />
+          <FormInput
+            label="Password (10+ chars, letters & numbers)"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            type="password"
+            autoComplete="new-password"
+            required
+          />
+          <FormInput
+            label="Invite code"
+            value={inviteCode}
+            onChange={(event) => setInviteCode(event.target.value)}
+            required
+          />
           {error && <p className="text-destructive text-sm">{error}</p>}
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm transition disabled:opacity-60"
           >
             {loading ? "Creating..." : "Create account"}
-          </button>
+          </Button>
         </form>
 
         {uploadKey && (
@@ -112,22 +103,18 @@ export default function RegisterPage() {
               {uploadKey}
             </code>
             <div className="mt-4 flex gap-3">
-              <button
-                className="border-border hover:bg-muted rounded-md border px-3 py-2 text-xs"
+              <Button
                 type="button"
-                onClick={async () => {
-                  await navigator.clipboard.writeText(uploadKey)
-                }}
+                onClick={() => copyToClipboard(uploadKey)}
               >
-                Copy key
-              </button>
-              <button
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-2 text-xs"
+                {isCopied ? "Copied!" : "Copy key"}
+              </Button>
+              <Button
                 type="button"
                 onClick={() => router.push("/dashboard")}
               >
                 Go to dashboard
-              </button>
+              </Button>
             </div>
           </div>
         )}

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 
+import { formatSize, formatDate } from "@/lib/formatting"
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, isAdmin } from "@/lib/auth"
 import { isValidObjectId } from "@/lib/security"
@@ -26,22 +27,6 @@ import {
 } from "@tabler/icons-react"
 
 type RouteContext = { params: Promise<{ id: string }> }
-
-function formatSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
-}
-
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
 
 export default async function FilePage({ params }: RouteContext) {
   const { id } = await params
@@ -81,7 +66,7 @@ export default async function FilePage({ params }: RouteContext) {
           </Button>
         </div>
 
-        <Card>
+        <Card className="border-2">
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-2">

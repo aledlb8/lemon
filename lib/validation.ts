@@ -11,7 +11,7 @@ export function normalizeInviteCode(value: string) {
 }
 
 export function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+  return /^[^\s@]+@[^\s@.](?:[^\s@]*[^\s@.])?\.[^\s@]{2,}$/.test(value)
 }
 
 export function isValidUsername(value: string) {

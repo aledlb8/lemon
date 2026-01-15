@@ -2,6 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { EmptyState } from "@/components/ui/empty-state"
+import { AlertCard } from "@/components/ui/alert-card"
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import {
   IconArrowLeft,
   IconCircleCheck,
@@ -39,6 +42,14 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
   const [items, setItems] = useState(invites)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { copyToClipboard } = useCopyToClipboard()
+
+  const handleCopy = async (inviteId: string, code: string) => {
+    await copyToClipboard(code)
+    setCopiedId(inviteId)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   const createInvite = async () => {
     setLoading(true)
@@ -96,68 +107,54 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
           </div>
         </header>
 
-        {message && (
-          <Card className={messageIsError ? "border-destructive/50 bg-destructive/10" : "bg-muted/40"}>
-            <CardContent>
-              <p className="text-sm">{message}</p>
-            </CardContent>
-          </Card>
-        )}
+        {message && <AlertCard message={message} variant={messageIsError ? "error" : "info"} />}
 
         <section className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 border-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <IconPlus className="h-5 w-5" />
                 Create invite
               </CardTitle>
               <CardDescription>
-                Issue a fresh code for onboarding new users.
+                Issue a fresh code for onboarding new users. Each code is single-use.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-muted-foreground text-sm">
-                Share the invite code securely. Each code is single-use.
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={createInvite} disabled={loading}>
+            <CardContent>
+              <div className="flex flex-wrap items-center gap-4">
+                <Button onClick={createInvite} disabled={loading} size="lg" className="font-semibold">
                   <IconPlus />
                   {loading ? "Creating..." : "New invite"}
                 </Button>
-                <Badge variant="secondary">
-                  <IconKey />
-                  {unusedCount} available
-                </Badge>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <IconKey className="h-4 w-4" />
+                  <span className="text-sm font-medium">{unusedCount} available</span>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <IconKey className="h-5 w-5" />
-                Invite stats
+                Stats
               </CardTitle>
-              <CardDescription>Track usage at a glance.</CardDescription>
+              <CardDescription>Track usage at a glance</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total invites</span>
-                <span className="font-medium">{items.length}</span>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between border-b pb-4">
+                <span className="text-muted-foreground text-sm font-medium">Total</span>
+                <span className="text-3xl font-bold">{items.length}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Unused</span>
-                <Badge variant="default">{unusedCount}</Badge>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-sm font-medium">Available</span>
+                <Badge variant="default" className="text-base px-3 py-1.5">{unusedCount}</Badge>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Used</span>
-                <Badge variant="secondary">{usedCount}</Badge>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-sm font-medium">Used</span>
+                <Badge variant="secondary" className="text-base px-3 py-1.5">{usedCount}</Badge>
               </div>
-              {items[0] && (
-                <div className="text-muted-foreground text-xs">
-                  Latest created {new Date(items[0].createdAt).toLocaleString()}
-                </div>
-              )}
             </CardContent>
           </Card>
         </section>
@@ -176,63 +173,67 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
 
         <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.length === 0 && (
-            <Card className="col-span-full">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <IconKey className="text-muted-foreground mb-4 h-12 w-12" />
-                <p className="text-muted-foreground mb-2 text-lg font-medium">
-                  No invites yet
-                </p>
-                <p className="text-muted-foreground text-sm">
-                  Create a code to onboard your first user
-                </p>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={IconKey}
+              title="No invites yet"
+              description="Create a code to onboard your first user"
+            />
           )}
           {items.map((invite) => (
-            <Card key={invite.id} className="group transition-shadow hover:shadow-lg">
+            <Card
+              key={invite.id}
+              className={`group transition-all duration-200 hover:shadow-lg border-2 ${invite.usedAt ? "opacity-75" : "hover:border-primary/50"
+                }`}
+            >
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <IconKey className="h-5 w-5" />
-                  Invite code
-                </CardTitle>
-                <CardDescription className="flex items-center gap-2">
-                  <IconClock className="h-4 w-4" />
-                  {new Date(invite.createdAt).toLocaleString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="bg-muted/50 border-border rounded-lg border p-3 font-mono text-xs break-all">
-                  {invite.code}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={invite.usedAt ? "secondary" : "default"}>
-                    {invite.usedAt ? <IconCircleCheck /> : <IconCircleX />}
-                    {invite.usedAt ? "Used" : "Unused"}
+                <div className="flex items-center justify-between mb-2">
+                  <Badge
+                    variant={invite.usedAt ? "secondary" : "default"}
+                    className="gap-1.5 text-xs font-semibold"
+                  >
+                    {invite.usedAt ? (
+                      <IconCircleCheck className="h-3.5 w-3.5" />
+                    ) : (
+                      <IconCircleCheck className="h-3.5 w-3.5" />
+                    )}
+                    {invite.usedAt ? "Used" : "Available"}
                   </Badge>
-                  {invite.usedAt ? (
-                    <span className="text-muted-foreground text-xs">Redeemed</span>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">Available</span>
+                  {invite.usedAt && (
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <IconCircleCheck className="h-3.5 w-3.5" />
+                      <span className="text-xs">
+                        Redeemed {new Date(invite.usedAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   )}
                 </div>
-              </CardContent>
-              <CardFooter className="flex items-center justify-between gap-2 pt-2">
-                <div className="text-muted-foreground text-xs">
-                  {invite.usedAt
-                    ? `Used ${new Date(invite.usedAt).toLocaleString()}`
-                    : "Not used yet"}
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <IconClock className="h-3.5 w-3.5" />
+                  <span className="text-xs">
+                    Created {new Date(invite.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(invite.code)
-                  }}
-                >
-                  <IconCopy />
-                  Copy
-                </Button>
-              </CardFooter>
+              </CardHeader>
+              <CardContent className="pb-6">
+                <div>
+                  <p className="text-muted-foreground text-xs font-medium mb-2">Invite code</p>
+                  <div className="bg-muted/70 border rounded-lg p-3 transition-colors hover:bg-muted flex items-start justify-between gap-2">
+                    <code className="font-mono text-sm break-all select-all flex-1">
+                      {invite.code}
+                    </code>
+                    <Button
+                      onClick={() => handleCopy(invite.id, invite.code)}
+                      aria-label="Copy invite code"
+                    >
+                      {copiedId === invite.id ? (
+                        <IconCircleCheck className="h-4 w-4" />
+                      ) : (
+                        <IconCopy />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           ))}
         </section>
