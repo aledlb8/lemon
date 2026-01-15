@@ -1,24 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Lemon is an invite-only ShareX uploader with private galleries. It runs on
+Next.js, MongoDB (Mongoose), and Vercel Blob storage.
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies, then run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a `.env.local` with:
+
+```bash
+MONGODB_URI="mongodb+srv://..."
+BLOB_READ_WRITE_TOKEN="vercel_blob_token"
+```
+
+## Admin access
+
+Set the first admin manually in MongoDB by changing the `role` field:
+
+- `role: 1` = admin
+- `role: 0` = normal user
+- `role: -1` = banned
+
+Admins can generate invite codes from `/admin/invites`.
+
+## ShareX setup
+
+- Upload URL: `https://your-domain.com/api/upload`
+- Header name: `X-Upload-Key`
+- Header value: your upload key from the dashboard
+
+Uploads inherit the user’s default visibility setting.
+
+## Notes
+
+- Max upload size is 4.5MB.
+- Private files are served through `/api/media/:id/download`.
+- Vercel Blob objects are public by design; Lemon keeps private uploads unlisted
+  and only serves them through authenticated routes.
 
 ## Learn More
 
