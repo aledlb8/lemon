@@ -1,26 +1,31 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
 
-export default function HomePage() {
+import { getSessionUser } from "@/lib/auth"
+import { Button } from "@/components/ui/button"
+
+export default async function HomePage() {
+  const user = await getSessionUser()
+  if (user) {
+    redirect("/dashboard")
+  }
+
   return (
     <main className="bg-background text-foreground min-h-screen">
-      <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-        <div className="bg-primary/20 text-primary grid size-12 place-items-center rounded-2xl text-xl font-bold">
-          L
+      <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col items-center justify-center gap-8 px-6 py-16 text-center">
+        <div className="space-y-4">
+          <h1 className="text-6xl font-bold tracking-tight">Lemon</h1>
+          <p className="text-muted-foreground text-lg">
+            Simple and fast file sharing
+          </p>
         </div>
-        <h1 className="text-4xl font-semibold">Lemon</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <Link
-            className="border-border hover:bg-muted rounded-md border px-4 py-2 transition"
-            href="/login"
-          >
-            Sign in
-          </Link>
-          <Link
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 transition"
-            href="/register"
-          >
-            Create account
-          </Link>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="lg" asChild>
+            <Link href="/login">Sign in</Link>
+          </Button>
+          <Button size="lg" asChild>
+            <Link href="/register">Get started</Link>
+          </Button>
         </div>
       </div>
     </main>

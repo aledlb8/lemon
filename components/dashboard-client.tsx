@@ -3,6 +3,30 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import {
+  IconKey,
+  IconEye,
+  IconEyeOff,
+  IconRefresh,
+  IconTrash,
+  IconDownload,
+  IconCopy,
+  IconLogout,
+  IconUpload,
+  IconShieldCheck,
+  IconPhoto,
+  IconFileText,
+} from "@tabler/icons-react"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 type Visibility = "public" | "private"
 
@@ -95,184 +119,228 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
 
   return (
     <main className="bg-background text-foreground min-h-screen">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-12">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold">Welcome back, {user.username}</h1>
-            <p className="text-muted-foreground text-sm">
-              {user.role === 1 ? "Administrator" : "Standar User"}
-            </p>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8 lg:py-12">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold tracking-tight">Welcome back, <Link href={`/u/${user.username}`} className="hover:underline font-bold text-primary">{user.username}</Link></h1>
+            <div className="flex items-center gap-2">
+              <Badge variant={user.role === 1 ? "default" : "secondary"}>
+                {user.role === 1 ? "Administrator" : "Standard User"}
+              </Badge>
+              <span className="text-muted-foreground text-sm">{user.email}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-2">
             {user.role === 1 && (
-              <Link
-                href="/admin/invites"
-                className="border-border hover:bg-muted rounded-md border px-3 py-1.5 transition"
-              >
-                Admin invites
-              </Link>
+              <Button variant="outline" asChild>
+                <Link href="/admin/invites">
+                  <IconShieldCheck />
+                  Admin invites
+                </Link>
+              </Button>
             )}
-            <button
-              onClick={handleLogout}
-              className="border-border hover:bg-muted rounded-md border px-3 py-1.5 transition"
-            >
+            <Button variant="outline" onClick={handleLogout}>
+              <IconLogout />
               Sign out
-            </button>
+            </Button>
           </div>
         </header>
 
         {message && (
-          <div className="border-border bg-card text-sm rounded-md border px-4 py-3">
-            {message}
-          </div>
+          <Card className="border-destructive/50 bg-destructive/10">
+            <CardContent className="pt-6">
+              <p className="text-sm">{message}</p>
+            </CardContent>
+          </Card>
         )}
 
-        <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-          <div className="border-border bg-card rounded-2xl border p-6 shadow-sm">
-            <div className="text-sm font-medium">ShareX upload key</div>
-            <p className="text-muted-foreground mt-1 text-xs">
-              Send screenshots to <code className="text-xs">/api/upload</code>{" "}
-              with your upload key.
-            </p>
-            <div className="mt-4 flex flex-col gap-3">
+        <section className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <IconKey className="h-5 w-5" />
+                ShareX Upload Key
+              </CardTitle>
+              <CardDescription>
+                Send screenshots to <code className="text-xs">/api/upload</code> with your upload key.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               {uploadKey ? (
-                <code className="bg-muted text-foreground rounded-md px-3 py-2 text-xs">
-                  {uploadKey}
-                </code>
+                <div className="bg-muted/50 border-border relative rounded-lg border p-4">
+                  <code className="text-foreground text-sm break-all">
+                    {uploadKey}
+                  </code>
+                </div>
               ) : (
-                <div className="text-muted-foreground text-xs">
-                  Generate a new key to reveal it here.
+                <div className="bg-muted/30 text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
+                  Generate a new key to reveal it here
                 </div>
               )}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1.5 text-xs transition"
-                  type="button"
-                  onClick={regenerateUploadKey}
+            </CardContent>
+            <CardFooter className="flex flex-wrap gap-2">
+              <Button onClick={regenerateUploadKey} size="sm">
+                <IconKey />
+                Regenerate key
+              </Button>
+              <Button variant="outline" onClick={downloadShareXConfig} size="sm">
+                <IconDownload />
+                Download config
+              </Button>
+              {uploadKey && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(uploadKey)
+                  }}
                 >
-                  Regenerate key
-                </button>
-                <button
-                  className="border-border hover:bg-muted rounded-md border px-3 py-1.5 text-xs transition"
-                  type="button"
-                  onClick={downloadShareXConfig}
-                >
-                  Download ShareX config
-                </button>
-                {uploadKey && (
-                  <button
-                    className="border-border hover:bg-muted rounded-md border px-3 py-1.5 text-xs transition"
-                    type="button"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(uploadKey)
-                    }}
-                  >
-                    Copy key
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+                  <IconCopy />
+                  Copy key
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
 
-          <div className="border-border bg-card rounded-2xl border p-6 shadow-sm">
-            <div className="text-sm font-medium">Default visibility</div>
-            <p className="text-muted-foreground mt-1 text-xs">
-              New uploads will be {visibility}.
-            </p>
-            <div className="mt-4 flex gap-3 text-xs">
-              {(["public", "private"] as Visibility[]).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => updateVisibility(value)}
-                  className={`rounded-md px-3 py-1.5 transition ${visibility === value
-                    ? "bg-primary text-primary-foreground"
-                    : "border-border hover:bg-muted border"
-                    }`}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
-            {origin && (
-              <div className="text-muted-foreground mt-4 text-xs space-y-1">
-                <div>
-                  Upload endpoint:{" "}
-                  <code className="text-xs">{origin}/api/upload</code>
-                </div>
-                <div>
-                  Header: <code className="text-xs">X-Upload-Key</code>
-                </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {visibility === "public" ? (
+                  <IconEye className="h-5 w-5" />
+                ) : (
+                  <IconEyeOff className="h-5 w-5" />
+                )}
+                Default Visibility
+              </CardTitle>
+              <CardDescription>
+                New uploads will be {visibility} by default.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                {(["public", "private"] as Visibility[]).map((value) => (
+                  <Button
+                    key={value}
+                    variant={visibility === value ? "default" : "outline"}
+                    onClick={() => updateVisibility(value)}
+                    className="flex-1 capitalize"
+                  >
+                    {value === "public" ? <IconEye /> : <IconEyeOff />}
+                    {value}
+                  </Button>
+                ))}
               </div>
-            )}
-          </div>
+              {origin && (
+                <div className="bg-muted/30 text-muted-foreground space-y-2 rounded-lg border border-dashed p-4 text-xs">
+                  <div className="flex items-start gap-2">
+                    <span className="font-medium">Endpoint:</span>
+                    <code className="text-foreground">{origin}/api/upload</code>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-medium">Header:</span>
+                    <code className="text-foreground">X-Upload-Key</code>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </section>
 
-        <section className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">Uploads</h2>
-            <p className="text-muted-foreground text-xs">
+        <section className="flex items-center justify-between border-b pb-4">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+              <IconUpload className="h-6 w-6" />
+              Your Uploads
+            </h2>
+            <p className="text-muted-foreground text-sm">
               {items.length} item{items.length === 1 ? "" : "s"} stored
             </p>
           </div>
-          <button
-            onClick={refreshMedia}
-            className="border-border hover:bg-muted rounded-md border px-3 py-1.5 text-xs transition"
-          >
+          <Button variant="outline" onClick={refreshMedia} size="sm">
+            <IconRefresh />
             Refresh
-          </button>
+          </Button>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.length === 0 && (
-            <div className="text-muted-foreground text-sm">
-              No uploads yet. Send something from ShareX to get started.
-            </div>
+            <Card className="col-span-full">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <IconUpload className="text-muted-foreground mb-4 h-12 w-12" />
+                <p className="text-muted-foreground mb-2 text-lg font-medium">
+                  No uploads yet
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  Send something from ShareX to get started
+                </p>
+              </CardContent>
+            </Card>
           )}
           {items.map((item) => {
             const isImage = item.contentType.startsWith("image/")
             const downloadUrl = `/api/media/${item.id}/download`
             return (
-              <div
-                key={item.id}
-                className="border-border bg-card flex h-full flex-col gap-3 rounded-2xl border p-4 shadow-sm"
-              >
-                <div className="bg-muted/30 flex h-40 items-center justify-center overflow-hidden rounded-xl">
+              <Card key={item.id} className="group overflow-hidden transition-shadow hover:shadow-lg">
+                <div className="bg-muted/50 relative flex aspect-video items-center justify-center overflow-hidden">
                   {isImage ? (
-                    <img
-                      src={downloadUrl}
-                      alt={item.originalName}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
+                    <>
+                      <img
+                        src={downloadUrl}
+                        alt={item.originalName}
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="bg-background/80 absolute right-2 top-2 backdrop-blur-sm">
+                        <Badge variant="secondary" className="gap-1">
+                          <IconPhoto className="h-3 w-3" />
+                          Image
+                        </Badge>
+                      </div>
+                    </>
                   ) : (
-                    <span className="text-muted-foreground text-xs uppercase">
-                      {item.originalName.split(".").pop() ?? "file"}
-                    </span>
+                    <div className="flex flex-col items-center gap-2">
+                      <IconFileText className="text-muted-foreground h-12 w-12" />
+                      <Badge variant="outline" className="uppercase">
+                        {item.originalName.split(".").pop() ?? "file"}
+                      </Badge>
+                    </div>
                   )}
                 </div>
-                <div className="flex flex-1 flex-col gap-1">
-                  <div className="text-sm font-medium">{item.originalName}</div>
-                  <div className="text-muted-foreground text-xs">
-                    {formatSize(item.size)} · {item.visibility}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <Link
-                    href={`/file/${item.id}`}
-                    className="text-foreground underline"
-                  >
-                    View
-                  </Link>
-                  <button
-                    className="text-destructive hover:text-destructive/80"
+                <CardHeader className="pb-3">
+                  <CardTitle className="line-clamp-1 text-base">
+                    <Link href={`/file/${item.id}`} className="hover:underline font-bold text-primary">{item.originalName}</Link>
+                  </CardTitle>
+                  <CardDescription className="flex items-center gap-2">
+                    <span>{formatSize(item.size)}</span>
+                    <span>·</span>
+                    <Badge variant={item.visibility === "public" ? "default" : "secondary"} className="h-5 text-xs">
+                      {item.visibility === "public" ? (
+                        <IconEye className="h-3 w-3" />
+                      ) : (
+                        <IconEyeOff className="h-3 w-3" />
+                      )}
+                      {item.visibility}
+                    </Badge>
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter className="flex gap-2 pt-0">
+                  <Button variant="outline" size="sm" className="flex-1" asChild>
+                    <Link href={`/file/${item.id}`}>
+                      <IconEye />
+                      View
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
                     onClick={() => handleDelete(item.id)}
                     disabled={busyId === item.id}
                   >
+                    <IconTrash />
                     {busyId === item.id ? "Deleting..." : "Delete"}
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </CardFooter>
+              </Card>
             )
           })}
         </section>
