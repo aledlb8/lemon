@@ -24,6 +24,7 @@ import {
   IconCalendar,
   IconFileText,
   IconPhoto,
+  IconVideo,
 } from "@tabler/icons-react"
 
 type RouteContext = { params: Promise<{ id: string }> }
@@ -52,6 +53,7 @@ export default async function FilePage({ params }: RouteContext) {
   }
 
   const isImage = media.contentType.startsWith("image/")
+  const isVideo = media.contentType.startsWith("video/")
   const downloadUrl = `/api/media/${media._id.toString()}/download`
 
   return (
@@ -73,6 +75,8 @@ export default async function FilePage({ params }: RouteContext) {
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   {isImage ? (
                     <IconPhoto className="h-6 w-6" />
+                  ) : isVideo ? (
+                    <IconVideo className="h-6 w-6" />
                   ) : (
                     <IconFileText className="h-6 w-6" />
                   )}
@@ -116,12 +120,22 @@ export default async function FilePage({ params }: RouteContext) {
                   className="h-auto w-full"
                 />
               </div>
+            ) : isVideo ? (
+              <div className="bg-muted/30 overflow-hidden rounded-lg border">
+                <video
+                  src={downloadUrl}
+                  controls
+                  className="h-auto w-full"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
             ) : (
               <div className="bg-muted/30 flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-12 text-center">
                 <IconFileText className="text-muted-foreground h-16 w-16" />
                 <div className="space-y-2">
                   <p className="text-muted-foreground font-medium">
-                    This file is not an image
+                    This file cannot be previewed
                   </p>
                   <p className="text-muted-foreground text-sm">
                     Use the download button to open it

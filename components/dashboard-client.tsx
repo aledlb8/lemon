@@ -69,7 +69,9 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
   const [modalImageIndex, setModalImageIndex] = useState<number | null>(null)
   const { copyToClipboard, isCopied } = useCopyToClipboard()
 
-  const imageItems = items.filter((item) => item.contentType.startsWith("image/"))
+  const mediaItems = items.filter((item) =>
+    item.contentType.startsWith("image/") || item.contentType.startsWith("video/")
+  )
 
   useEffect(() => {
     setOrigin(window.location.origin)
@@ -146,7 +148,7 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
   }
 
   const handleImageClick = (id: string) => {
-    const index = imageItems.findIndex((item) => item.id === id)
+    const index = mediaItems.findIndex((item) => item.id === id)
     if (index !== -1) {
       setModalImageIndex(index)
     }
@@ -162,7 +164,7 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
 
   const handleModalNext = () => {
     setModalImageIndex((prev) =>
-      prev !== null && prev < imageItems.length - 1 ? prev + 1 : prev
+      prev !== null && prev < mediaItems.length - 1 ? prev + 1 : prev
     )
   }
 
@@ -329,16 +331,17 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
         </section>
       </div>
 
-      {modalImageIndex !== null && imageItems[modalImageIndex] && (
+      {modalImageIndex !== null && mediaItems[modalImageIndex] && (
         <ImageModal
           isOpen={true}
-          imageUrl={`/api/media/${imageItems[modalImageIndex].id}/download`}
-          imageName={imageItems[modalImageIndex].originalName}
+          imageUrl={`/api/media/${mediaItems[modalImageIndex].id}/download`}
+          imageName={mediaItems[modalImageIndex].originalName}
+          contentType={mediaItems[modalImageIndex].contentType}
           onClose={handleModalClose}
           onPrevious={handleModalPrevious}
           onNext={handleModalNext}
           hasPrevious={modalImageIndex > 0}
-          hasNext={modalImageIndex < imageItems.length - 1}
+          hasNext={modalImageIndex < mediaItems.length - 1}
         />
       )}
     </main>

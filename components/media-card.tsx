@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { IconPhoto, IconFileText, IconEye, IconEyeOff, IconDotsVertical, IconCopy, IconTrash } from "@tabler/icons-react"
+import { IconPhoto, IconFileText, IconEye, IconEyeOff, IconDotsVertical, IconCopy, IconTrash, IconVideo } from "@tabler/icons-react"
 import { formatSize } from "@/lib/formatting"
 
 interface MediaCardProps {
@@ -48,6 +48,7 @@ export function MediaCard({
   isDeleting,
 }: MediaCardProps) {
   const isImage = contentType.startsWith("image/")
+  const isVideo = contentType.startsWith("video/")
   const downloadUrl = `/api/media/${id}/download`
   const fileExtension = originalName.split(".").pop() ?? "file"
 
@@ -81,6 +82,30 @@ export function MediaCard({
             loading="lazy"
             onClick={() => onImageClick?.(id)}
           />
+        ) : isVideo ? (
+          <div
+            className="relative h-full w-full cursor-pointer group/video"
+            onClick={() => onImageClick?.(id)}
+          >
+            <video
+              src={downloadUrl}
+              className="h-full w-full object-cover"
+              muted
+              playsInline
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/40 via-transparent to-transparent">
+              <div className="bg-background/90 backdrop-blur-sm rounded-full p-3 transition-transform group-hover/video:scale-110 shadow-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-6 w-6 text-foreground"
+                >
+                  <path d="M8 5.14v14l11-7-11-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <IconFileText className="text-muted-foreground h-12 w-12" />
@@ -157,6 +182,15 @@ export function MediaCard({
               <Badge variant="secondary" className="h-5 text-xs gap-1">
                 <IconPhoto className="h-3 w-3" />
                 Image
+              </Badge>
+            </>
+          )}
+          {isVideo && (
+            <>
+              <span>·</span>
+              <Badge variant="secondary" className="h-5 text-xs gap-1">
+                <IconVideo className="h-3 w-3" />
+                Video
               </Badge>
             </>
           )}

@@ -8,6 +8,7 @@ interface ImageModalProps {
   isOpen: boolean
   imageUrl: string
   imageName: string
+  contentType: string
   onClose: () => void
   onPrevious?: () => void
   onNext?: () => void
@@ -19,12 +20,14 @@ export function ImageModal({
   isOpen,
   imageUrl,
   imageName,
+  contentType,
   onClose,
   onPrevious,
   onNext,
   hasPrevious = false,
   hasNext = false,
 }: ImageModalProps) {
+  const isVideo = contentType.startsWith("video/")
   useEffect(() => {
     if (!isOpen) return
 
@@ -97,17 +100,28 @@ export function ImageModal({
         </Button>
       )}
 
-      {/* Image */}
+      {/* Media content */}
       <div
-        className="relative max-h-[90vh] max-w-[90vw]"
+        className="relative flex flex-col items-center max-h-[90vh] max-w-[90vw]"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
-          src={imageUrl}
-          alt={imageName}
-          className="max-h-[90vh] max-w-[90vw] object-contain"
-        />
-        <div className="bg-background/90 absolute bottom-0 left-0 right-0 p-4 text-center backdrop-blur-sm">
+        {isVideo ? (
+          <video
+            src={imageUrl}
+            controls
+            autoPlay
+            className="max-h-[85vh] max-w-[90vw] object-contain"
+          >
+            Your browser does not support the video tag.
+          </video>
+        ) : (
+          <img
+            src={imageUrl}
+            alt={imageName}
+            className="max-h-[85vh] max-w-[90vw] object-contain"
+          />
+        )}
+        <div className="bg-background/90 w-full p-4 text-center backdrop-blur-sm mt-2 rounded-lg">
           <p className="text-sm font-medium truncate">{imageName}</p>
         </div>
       </div>
