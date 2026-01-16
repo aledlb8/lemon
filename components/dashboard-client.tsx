@@ -7,6 +7,7 @@ import { formatSize } from "@/lib/formatting"
 import { EmptyState } from "@/components/ui/empty-state"
 import { MediaCard } from "@/components/media-card"
 import { AlertCard } from "@/components/ui/alert-card"
+import { ImageModal } from "@/components/ui/image-modal"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import {
   IconKey,
@@ -65,7 +66,10 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
   const [origin, setOrigin] = useState("")
   const [busyId, setBusyId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [modalImageIndex, setModalImageIndex] = useState<number | null>(null)
   const { copyToClipboard, isCopied } = useCopyToClipboard()
+
+  const imageItems = items.filter((item) => item.contentType.startsWith("image/"))
 
   useEffect(() => {
     setOrigin(window.location.origin)
@@ -139,6 +143,27 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
   const handleCopyLink = (id: string) => {
     const link = `${origin}/file/${id}`
     copyToClipboard(link)
+  }
+
+  const handleImageClick = (id: string) => {
+    const index = imageItems.findIndex((item) => item.id === id)
+    if (index !== -1) {
+      setModalImageIndex(index)
+    }
+  }
+
+  const handleModalClose = () => {
+    setModalImageIndex(null)
+  }
+
+  const handleModalPrevious = () => {
+    setModalImageIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))
+  }
+
+  const handleModalNext = () => {
+    setModalImageIndex((prev) =>
+      prev !== null && prev < imageItems.length - 1 ? prev + 1 : prev
+    )
   }
 
   return (
@@ -297,11 +322,25 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
               onDelete={handleDelete}
               onVisibilityChange={handleMediaVisibilityChange}
               onCopyLink={handleCopyLink}
+              onImageClick={handleImageClick}
               isDeleting={busyId === item.id}
             />
           ))}
         </section>
       </div>
+
+      {modalImageIndex !== null && imageItems[modalImageIndex] && (
+        <ImageModal
+          isOpen={true}
+          imageUrl={`/api/media/${imageItems[modalImageIndex].id}/download`}
+          imageName={imageItems[modalImageIndex].originalName}
+          onClose={handleModalClose}
+          onPrevious={handleModalPrevious}
+          onNext={handleModalNext}
+          hasPrevious={modalImageIndex > 0}
+          hasNext={modalImageIndex < imageItems.length - 1}
+        />
+      )}
     </main>
   )
 }

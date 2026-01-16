@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation"
-import { EmptyState } from "@/components/ui/empty-state"
-import { MediaCard } from "@/components/media-card"
+import UserGalleryClient from "@/components/user-gallery-client"
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, isAdmin } from "@/lib/auth"
 import { normalizeUsername } from "@/lib/validation"
@@ -52,26 +51,16 @@ export default async function UserGalleryPage({ params }: RouteContext) {
           </div>
         </header>
 
-        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {uploads.length === 0 && (
-            <EmptyState
-              icon={IconUpload}
-              title="No public uploads yet"
-              description="This user hasn't shared any files publicly"
-            />
-          )}
-          {uploads.map((item) => (
-            <MediaCard
-              key={item._id.toString()}
-              id={item._id.toString()}
-              originalName={item.originalName}
-              contentType={item.contentType}
-              size={item.size}
-              visibility={item.visibility}
-              showVisibility={canSeePrivate}
-            />
-          ))}
-        </section>
+        <UserGalleryClient
+          uploads={uploads.map((item) => ({
+            id: item._id.toString(),
+            originalName: item.originalName,
+            contentType: item.contentType,
+            size: item.size,
+            visibility: item.visibility,
+          }))}
+          canSeePrivate={canSeePrivate}
+        />
       </div>
     </main>
   )

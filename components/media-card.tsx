@@ -30,6 +30,7 @@ interface MediaCardProps {
   onDelete?: (id: string) => void
   onVisibilityChange?: (id: string, visibility: "public" | "private") => void
   onCopyLink?: (id: string) => void
+  onImageClick?: (id: string) => void
   isDeleting?: boolean
 }
 
@@ -43,6 +44,7 @@ export function MediaCard({
   onDelete,
   onVisibilityChange,
   onCopyLink,
+  onImageClick,
   isDeleting,
 }: MediaCardProps) {
   const isImage = contentType.startsWith("image/")
@@ -75,8 +77,9 @@ export function MediaCard({
           <img
             src={downloadUrl}
             alt={originalName}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform group-hover:scale-105 cursor-pointer"
             loading="lazy"
+            onClick={() => onImageClick?.(id)}
           />
         ) : (
           <div className="flex flex-col items-center gap-2">
@@ -86,7 +89,7 @@ export function MediaCard({
             </Badge>
           </div>
         )}
-        <div className="absolute right-2 top-2">
+        <div className="absolute right-2 top-2" onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="h-8 w-8 backdrop-blur-sm">
