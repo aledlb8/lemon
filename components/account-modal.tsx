@@ -282,7 +282,7 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
 
         <div className="grid gap-6">
           <Card className="border-2">
-            <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+            <CardContent className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium uppercase tracking-wide">
                   <IconMail className="h-3.5 w-3.5" />
@@ -510,7 +510,7 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Card className="border-2">
-                <CardContent className="pt-4">
+                <CardContent>
                   <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                     Total uploads
                   </p>
@@ -518,7 +518,7 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
                 </CardContent>
               </Card>
               <Card className="border-2">
-                <CardContent className="pt-4">
+                <CardContent>
                   <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                     Storage used
                   </p>
@@ -528,7 +528,7 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
                 </CardContent>
               </Card>
               <Card className="border-2">
-                <CardContent className="pt-4">
+                <CardContent>
                   <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                     Visibility split
                   </p>
@@ -538,7 +538,7 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
                 </CardContent>
               </Card>
               <Card className="border-2">
-                <CardContent className="pt-4">
+                <CardContent>
                   <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                     Media types
                   </p>
@@ -548,7 +548,7 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
                 </CardContent>
               </Card>
               <Card className="border-2 sm:col-span-2">
-                <CardContent className="pt-4">
+                <CardContent>
                   <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                     Last upload
                   </p>

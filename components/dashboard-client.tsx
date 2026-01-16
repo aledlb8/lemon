@@ -175,7 +175,7 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8 lg:py-12">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-semibold tracking-tight">Welcome back, <Link href={`/u/${currentUser.username}`} className="hover:underline font-bold text-primary hover:underline-offset-4 hover:decoration-2 hover:decoration-chart-3/80">{currentUser.username}</Link></h1>
+            <h1 className="text-3xl font-semibold tracking-tight">Welcome back, <Link target="_blank" href={`/u/${currentUser.username}`} className="hover:underline font-bold text-primary hover:underline-offset-4 hover:decoration-2 hover:decoration-chart-3/80">{currentUser.username}</Link></h1>
             <div className="flex items-center gap-2">
               <AccountModal
                 user={currentUser}
