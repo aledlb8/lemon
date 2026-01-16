@@ -1,9 +1,12 @@
+import type { Metadata } from "next"
 import Link from "next/link"
+import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 
 import { formatSize, formatDate } from "@/lib/formatting"
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, isAdmin } from "@/lib/auth"
+import { getBaseUrl } from "@/lib/http"
 import { isValidObjectId } from "@/lib/security"
 import { MediaModel } from "@/models/Media"
 import {
@@ -28,6 +31,58 @@ import {
 } from "@tabler/icons-react"
 
 type RouteContext = { params: Promise<{ id: string }> }
+
+export async function generateMetadata(
+  { params }: RouteContext
+): Promise<Metadata> {
+  const { id } = await params
+  if (!isValidObjectId(id)) {
+    return { title: "Not found" }
+  }
+
+  await dbConnect()
+  const media = await MediaModel.findById(id).lean()
+  if (!media) {
+    return { title: "Not found" }
+  }
+
+  const user = await getSessionUser()
+  const isOwner =
+    Boolean(user) &&
+    (isAdmin(user) || media.userId.toString() === user?._id.toString())
+
+  if (media.visibility === "private" && !isOwner) {
+    return { title: "Private file" }
+  }
+
+  const headerStore = await headers()
+  const baseUrl = getBaseUrl(
+    new Request("http://localhost", { headers: new Headers(headerStore) })
+  )
+  const fileUrl = new URL(`/file/${media._id.toString()}`, baseUrl).toString()
+  const isImage = media.contentType.startsWith("image/")
+  const canEmbedImage = isImage && media.visibility === "public"
+  const imageUrl = canEmbedImage ? media.blobUrl : undefined
+  const description = "Shared with Lemon."
+
+  return {
+    title: media.originalName,
+    description,
+    openGraph: {
+      title: media.originalName,
+      description,
+      url: fileUrl,
+      type: "article",
+      images: imageUrl ? [{ url: imageUrl }] : undefined,
+    },
+    twitter: {
+      card: imageUrl ? "summary_large_image" : "summary",
+      title: media.originalName,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  }
+}
 
 export default async function FilePage({ params }: RouteContext) {
   const { id } = await params
