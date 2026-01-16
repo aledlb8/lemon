@@ -93,7 +93,7 @@ export function MediaCard({
               muted
               playsInline
             />
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/40 via-transparent to-transparent">
+            <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-black/40 via-transparent to-transparent">
               <div className="bg-background/90 backdrop-blur-sm rounded-full p-3 transition-transform group-hover/video:scale-110 shadow-lg">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -157,7 +157,7 @@ export function MediaCard({
       </div>
       <CardHeader className="pb-3">
         <CardTitle className="line-clamp-1 text-base">
-          <Link href={`/file/${id}`} className="hover:underline font-bold text-primary">
+          <Link href={`/file/${id}`} className="hover:underline font-bold text-primary hover:underline-offset-4 hover:decoration-2 hover:decoration-chart-3/80">
             {originalName}
           </Link>
         </CardTitle>
