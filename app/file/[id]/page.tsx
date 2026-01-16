@@ -9,6 +9,7 @@ import { getSessionUser, isAdmin } from "@/lib/auth"
 import { getBaseUrl } from "@/lib/http"
 import { isValidObjectId } from "@/lib/security"
 import { MediaModel } from "@/models/Media"
+import { UserModel } from "@/models/User"
 import {
   Card,
   CardContent,
@@ -55,29 +56,32 @@ export async function generateMetadata(
     return { title: "Private file" }
   }
 
+  const owner = await UserModel.findById(media.userId).select("username").lean()
+  const username = owner?.username ?? "user"
+
   const headerStore = await headers()
   const baseUrl = getBaseUrl(
     new Request("http://localhost", { headers: new Headers(headerStore) })
   )
-  const fileUrl = new URL(`/file/${media._id.toString()}`, baseUrl).toString()
+  const profileUrl = new URL(`/u/${username}`, baseUrl).toString()
   const isImage = media.contentType.startsWith("image/")
   const canEmbedImage = isImage && media.visibility === "public"
   const imageUrl = canEmbedImage ? media.blobUrl : undefined
-  const description = "Shared with Lemon."
+  const description = `${username} wasted ${formatSize(media.size)} uploading this.`
 
   return {
-    title: media.originalName,
+    title: username,
     description,
     openGraph: {
-      title: media.originalName,
+      title: username,
       description,
-      url: fileUrl,
+      url: profileUrl,
       type: "article",
       images: imageUrl ? [{ url: imageUrl }] : undefined,
     },
     twitter: {
       card: imageUrl ? "summary_large_image" : "summary",
-      title: media.originalName,
+      title: username,
       description,
       images: imageUrl ? [imageUrl] : undefined,
     },
