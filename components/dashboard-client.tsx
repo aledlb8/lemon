@@ -186,12 +186,20 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
           </div>
           <div className="flex items-center gap-2">
             {currentUser.role === 1 && (
-              <Button variant="outline" asChild>
-                <Link href="/admin/invites">
-                  <IconShieldCheck />
-                  Admin invites
-                </Link>
-              </Button>
+              <>
+                <Button variant="outline" asChild>
+                  <Link href="/admin/users">
+                    <IconShieldCheck />
+                    Users
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/admin/invites">
+                    <IconShieldCheck />
+                    Invites
+                  </Link>
+                </Button>
+              </>
             )}
             <Button variant="outline" onClick={handleLogout}>
               <IconLogout />

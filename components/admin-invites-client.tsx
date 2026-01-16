@@ -99,9 +99,15 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
+              <Link href="/admin/users">
+                <IconShieldCheck />
+                Users
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
               <Link href="/dashboard">
                 <IconArrowLeft />
-                Back to dashboard
+                Dashboard
               </Link>
             </Button>
           </div>
