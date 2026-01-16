@@ -28,6 +28,9 @@ export default async function DashboardPage() {
         username: user.username,
         role: user.role,
         defaultVisibility: user.settings?.defaultVisibility ?? "public",
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        hasUploadKey: Boolean(user.uploadKeyHash),
       }}
       media={media.map((item) => ({
         id: item._id.toString(),

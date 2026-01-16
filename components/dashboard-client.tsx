@@ -3,31 +3,27 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { formatSize } from "@/lib/formatting"
 import { EmptyState } from "@/components/ui/empty-state"
 import { MediaCard } from "@/components/media-card"
 import { AlertCard } from "@/components/ui/alert-card"
 import { ImageModal } from "@/components/ui/image-modal"
+import { AccountModal } from "@/components/account-modal"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import {
   IconKey,
   IconEye,
   IconEyeOff,
   IconRefresh,
-  IconTrash,
   IconDownload,
   IconCopy,
   IconLogout,
   IconUpload,
   IconShieldCheck,
-  IconPhoto,
-  IconFileText,
 } from "@tabler/icons-react"
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -42,6 +38,9 @@ type DashboardUser = {
   username: string
   role: number
   defaultVisibility: Visibility
+  createdAt: string
+  updatedAt: string
+  hasUploadKey: boolean
 }
 
 type MediaItem = {
@@ -60,14 +59,17 @@ type DashboardClientProps = {
 
 export default function DashboardClient({ user, media }: DashboardClientProps) {
   const router = useRouter()
+  const [currentUser, setCurrentUser] = useState(user)
   const [items, setItems] = useState(media)
-  const [visibility, setVisibility] = useState<Visibility>(user.defaultVisibility)
+  const [visibility, setVisibility] = useState<Visibility>(
+    user.defaultVisibility
+  )
   const [uploadKey, setUploadKey] = useState<string | null>(null)
   const [origin, setOrigin] = useState("")
   const [busyId, setBusyId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [modalImageIndex, setModalImageIndex] = useState<number | null>(null)
-  const { copyToClipboard, isCopied } = useCopyToClipboard()
+  const { copyToClipboard } = useCopyToClipboard()
 
   const mediaItems = items.filter((item) =>
     item.contentType.startsWith("image/") || item.contentType.startsWith("video/")
@@ -173,16 +175,17 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8 lg:py-12">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-semibold tracking-tight">Welcome back, <Link href={`/u/${user.username}`} className="hover:underline font-bold text-primary hover:underline-offset-4 hover:decoration-2 hover:decoration-chart-3/80">{user.username}</Link></h1>
+            <h1 className="text-3xl font-semibold tracking-tight">Welcome back, <Link href={`/u/${currentUser.username}`} className="hover:underline font-bold text-primary hover:underline-offset-4 hover:decoration-2 hover:decoration-chart-3/80">{currentUser.username}</Link></h1>
             <div className="flex items-center gap-2">
-              <Badge variant={user.role === 1 ? "default" : "secondary"}>
-                {user.role === 1 ? "Administrator" : "Standard User"}
-              </Badge>
-              <button className="text-muted-foreground text-sm font-bold hover:underline hover:cursor-pointer hover:underline-offset-4 hover:decoration-2 hover:decoration-chart-3/80">{user.email}</button>
+              <AccountModal
+                user={currentUser}
+                media={items}
+                onUserUpdate={setCurrentUser}
+              />
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {user.role === 1 && (
+            {currentUser.role === 1 && (
               <Button variant="outline" asChild>
                 <Link href="/admin/invites">
                   <IconShieldCheck />
