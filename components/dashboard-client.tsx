@@ -117,6 +117,30 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
     setItems((prev) => prev.filter((item) => item.id !== id))
   }
 
+  const handleMediaVisibilityChange = async (id: string, newVisibility: Visibility) => {
+    setBusyId(id)
+    const response = await fetch(`/api/media/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ visibility: newVisibility }),
+    })
+    setBusyId(null)
+    if (!response.ok) {
+      setMessage("Failed to update visibility.")
+      return
+    }
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, visibility: newVisibility } : item
+      )
+    )
+  }
+
+  const handleCopyLink = (id: string) => {
+    const link = `${origin}/file/${id}`
+    copyToClipboard(link)
+  }
+
   return (
     <main className="bg-background text-foreground min-h-screen">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8 lg:py-12">
@@ -270,26 +294,10 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
               contentType={item.contentType}
               size={item.size}
               visibility={item.visibility}
-              actions={
-                <>
-                  <Button variant="outline" size="sm" className="flex-1 mt-4" asChild>
-                    <Link href={`/file/${item.id}`}>
-                      <IconEye />
-                      View
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="mt-4"
-                    onClick={() => handleDelete(item.id)}
-                    disabled={busyId === item.id}
-                  >
-                    <IconTrash />
-                    {busyId === item.id ? "Deleting..." : "Delete"}
-                  </Button>
-                </>
-              }
+              onDelete={handleDelete}
+              onVisibilityChange={handleMediaVisibilityChange}
+              onCopyLink={handleCopyLink}
+              isDeleting={busyId === item.id}
             />
           ))}
         </section>
