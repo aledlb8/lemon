@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, ROLE_BANNED } from "@/lib/auth"
 import { MediaModel } from "@/models/Media"
+import { InviteModel } from "@/models/Invite"
 import { DashboardClient } from "@/features/dashboard"
 
 export default async function DashboardPage() {
@@ -18,6 +19,14 @@ export default async function DashboardPage() {
   const media = await MediaModel.find({ userId: user._id })
     .sort({ createdAt: -1 })
     .limit(200)
+    .lean()
+
+  // Fetch user's available (unused) invites
+  const invites = await InviteModel.find({
+    ownedBy: user._id,
+    usedAt: null,
+  })
+    .sort({ createdAt: -1 })
     .lean()
 
   return (
@@ -39,6 +48,11 @@ export default async function DashboardPage() {
         size: item.size,
         visibility: item.visibility as "public" | "private",
         createdAt: item.createdAt.toISOString(),
+      }))}
+      invites={invites.map((invite) => ({
+        id: invite._id.toString(),
+        code: invite.code,
+        createdAt: invite.createdAt.toISOString(),
       }))}
     />
   )

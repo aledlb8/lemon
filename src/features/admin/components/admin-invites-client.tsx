@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import { formatDate } from "@/lib/formatting"
 import { EmptyState } from "@/components/ui/empty-state"
-import { AlertCard } from "@/components/ui/alert-card"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import {
   IconArrowLeft,
@@ -12,10 +12,13 @@ import {
   IconCopy,
   IconDotsVertical,
   IconExternalLink,
+  IconGift,
   IconKey,
   IconPlus,
   IconShieldCheck,
   IconTrash,
+  IconUsers,
+  IconUser,
 } from "@tabler/icons-react"
 import {
   Card,
@@ -39,8 +42,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 
 type InviteItem = {
   id: string
@@ -48,19 +63,27 @@ type InviteItem = {
   createdAt: string
   usedAt: string | null
   usedByUsername: string | null
+  ownedByUsername: string | null
 }
 
 type AdminInvitesClientProps = {
   invites: InviteItem[]
 }
 
+type GiftMode = "user" | "wave" | null
+
 export default function AdminInvitesClient({ invites }: AdminInvitesClientProps) {
   const [items, setItems] = useState(invites)
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const { copyToClipboard } = useCopyToClipboard()
+
+  // Gift modal state
+  const [giftMode, setGiftMode] = useState<GiftMode>(null)
+  const [giftUsername, setGiftUsername] = useState("")
+  const [giftCount, setGiftCount] = useState(1)
+  const [giftLoading, setGiftLoading] = useState(false)
 
   const handleCopy = async (inviteId: string, code: string) => {
     await copyToClipboard(code)
@@ -70,12 +93,11 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
 
   const createInvite = async () => {
     setLoading(true)
-    setMessage(null)
     const response = await fetch("/api/admin/invites", { method: "POST" })
     setLoading(false)
 
     if (!response.ok) {
-      setMessage("Failed to create invite.")
+      toast.error("Failed to create invite.")
       return
     }
 
@@ -89,6 +111,7 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
           createdAt: invite.createdAt,
           usedAt: null,
           usedByUsername: null,
+          ownedByUsername: null,
         },
         ...prev,
       ])
@@ -97,7 +120,6 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
 
   const deleteInvite = async (inviteId: string) => {
     setDeletingId(inviteId)
-    setMessage(null)
 
     const response = await fetch(`/api/admin/invites/${inviteId}`, {
       method: "DELETE",
@@ -107,18 +129,76 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      setMessage(data.error ?? "Failed to delete invite.")
+      toast.error(data.error ?? "Failed to delete invite.")
       return
     }
 
     setItems((prev) => prev.filter((invite) => invite.id !== inviteId))
-    setMessage("Invite deleted successfully.")
-    setTimeout(() => setMessage(null), 3000)
+    toast.success("Invite deleted successfully.")
+  }
+
+  const handleGiftSubmit = async () => {
+    if (giftMode === "user" && !giftUsername.trim()) {
+      toast.error("Please enter a username.")
+      return
+    }
+
+    setGiftLoading(true)
+
+    const endpoint = giftMode === "wave" ? "/api/admin/invites/wave" : "/api/admin/invites/gift"
+    const body = giftMode === "wave"
+      ? { count: giftCount }
+      : { username: giftUsername.trim(), count: giftCount }
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    })
+
+    setGiftLoading(false)
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      toast.error(data.error ?? "Failed to gift invites.")
+      return
+    }
+
+    const data = await response.json()
+    toast.success(data.message)
+    setGiftMode(null)
+    setGiftUsername("")
+    setGiftCount(1)
+
+    // For single user gift, add the new invites to the list
+    if (giftMode === "user" && data.invites) {
+      const newInvites = data.invites.map((inv: { id: string; code: string; createdAt: string }) => ({
+        id: inv.id,
+        code: inv.code,
+        createdAt: inv.createdAt,
+        usedAt: null,
+        usedByUsername: null,
+        ownedByUsername: giftUsername.trim().toLowerCase(),
+      }))
+      setItems((prev) => [...newInvites, ...prev])
+    }
+
+    // For wave, we'd need to refresh the page to see all new invites
+    if (giftMode === "wave") {
+      // Refresh the page to get all new invites
+      window.location.reload()
+    }
+  }
+
+  const closeGiftModal = () => {
+    setGiftMode(null)
+    setGiftUsername("")
+    setGiftCount(1)
   }
 
   const unusedCount = items.filter((invite) => !invite.usedAt).length
   const usedCount = items.length - unusedCount
-  const messageIsError = message?.toLowerCase().includes("fail") ?? false
+  const giftedCount = items.filter((invite) => invite.ownedByUsername).length
 
   return (
     <main className="bg-background text-foreground min-h-screen">
@@ -132,7 +212,7 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
                 Admin tools
               </Badge>
               <span className="text-muted-foreground text-sm">
-                Generate invite codes for new users.
+                Generate and gift invite codes for users.
               </span>
             </div>
           </div>
@@ -152,29 +232,42 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
           </div>
         </header>
 
-        {message && (
-          <AlertCard
-            message={message}
-            variant={messageIsError ? "error" : "success"}
-          />
-        )}
-
-        <section className="grid gap-6 md:grid-cols-4">
+        <section className="grid gap-6 md:grid-cols-5">
           <Card className="border-2 md:col-span-2">
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1 min-w-0">
                   <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                     Create invite
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Issue a fresh code for onboarding new users
+                    Issue codes for onboarding
                   </p>
                 </div>
-                <Button onClick={createInvite} disabled={loading} size="lg" className="font-semibold">
-                  <IconPlus />
-                  {loading ? "Creating..." : "New invite"}
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button onClick={createInvite} disabled={loading}>
+                    <IconPlus />
+                    {loading ? "..." : "Normal"}
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline">
+                        <IconGift />
+                        Gift
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setGiftMode("user")}>
+                        <IconUser className="h-4 w-4" />
+                        Gift to user
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setGiftMode("wave")}>
+                        <IconUsers className="h-4 w-4" />
+                        Wave (all users)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -206,6 +299,20 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
               </div>
             </CardContent>
           </Card>
+
+          <Card className="border-2">
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    Gifted
+                  </p>
+                  <p className="text-3xl font-bold">{giftedCount}</p>
+                </div>
+                <IconGift className="text-chart-4 h-8 w-8" />
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
         <Card className="border-2">
@@ -233,13 +340,13 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
                       Status
                     </TableHead>
                     <TableHead className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                      Owner
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                       Used by
                     </TableHead>
                     <TableHead className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                       Created
-                    </TableHead>
-                    <TableHead className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                      Used at
                     </TableHead>
                     <TableHead className="text-muted-foreground text-right text-xs font-medium uppercase tracking-wide">
                       Actions
@@ -274,6 +381,21 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        {invite.ownedByUsername ? (
+                          <div className="flex items-center gap-1.5">
+                            <IconGift className="h-3.5 w-3.5 text-muted-foreground" />
+                            <Link
+                              href={`/u/${invite.ownedByUsername}`}
+                              className="text-primary hover:underline text-sm font-medium hover:underline-offset-2"
+                            >
+                              {invite.ownedByUsername}
+                            </Link>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Admin</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {invite.usedByUsername ? (
                           <Link
                             href={`/u/${invite.usedByUsername}`}
@@ -287,11 +409,6 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {formatDate(new Date(invite.createdAt))}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {invite.usedAt
-                          ? formatDate(new Date(invite.usedAt))
-                          : "-"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end">
@@ -309,11 +426,11 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
                                 <IconCopy className="h-4 w-4" />
                                 Copy code
                               </DropdownMenuItem>
-                              {invite.usedByUsername && (
+                              {(invite.usedByUsername || invite.ownedByUsername) && (
                                 <DropdownMenuItem asChild>
-                                  <Link target="_blank" href={`/u/${invite.usedByUsername}`}>
+                                  <Link target="_blank" href={`/u/${invite.usedByUsername || invite.ownedByUsername}`}>
                                     <IconExternalLink className="h-4 w-4" />
-                                    View user profile
+                                    View {invite.usedByUsername ? "user" : "owner"} profile
                                   </Link>
                                 </DropdownMenuItem>
                               )}
@@ -342,6 +459,63 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
           </CardContent>
         </Card>
       </div>
+
+      {/* Gift Modal */}
+      <AlertDialog open={giftMode !== null} onOpenChange={(open) => !open && closeGiftModal()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia>
+              {giftMode === "wave" ? <IconUsers /> : <IconGift />}
+            </AlertDialogMedia>
+            <AlertDialogTitle>
+              {giftMode === "wave" ? "Gift invites to all users" : "Gift invite to user"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {giftMode === "wave"
+                ? "This will give invite codes to every non-banned user."
+                : "Enter the username of the user you want to gift an invite to."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <FieldGroup>
+            {giftMode === "user" && (
+              <Field>
+                <FieldLabel htmlFor="gift-username">Username</FieldLabel>
+                <Input
+                  id="gift-username"
+                  placeholder="Enter username"
+                  value={giftUsername}
+                  onChange={(e) => setGiftUsername(e.target.value)}
+                  autoFocus
+                />
+              </Field>
+            )}
+            <Field>
+              <FieldLabel htmlFor="gift-count">
+                Number of invites {giftMode === "wave" ? "(per user)" : ""}
+              </FieldLabel>
+              <Input
+                id="gift-count"
+                type="number"
+                min={1}
+                max={giftMode === "wave" ? 5 : 10}
+                value={giftCount}
+                onChange={(e) => setGiftCount(Math.max(1, Math.min(giftMode === "wave" ? 5 : 10, parseInt(e.target.value) || 1)))}
+              />
+              <p className="text-muted-foreground text-xs mt-1">
+                {giftMode === "wave" ? "Max 5 per user" : "Max 10"}
+              </p>
+            </Field>
+          </FieldGroup>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={giftLoading}>Cancel</AlertDialogCancel>
+            <Button onClick={handleGiftSubmit} disabled={giftLoading}>
+              {giftLoading ? "Gifting..." : giftMode === "wave" ? "Send wave" : "Gift invite"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   )
 }

@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { toast } from "sonner"
 
 import { formatDate, formatSize } from "@/lib/formatting"
-import { AlertCard } from "@/components/ui/alert-card"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -76,18 +76,10 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
     next: "",
     confirm: "",
   })
-  const [passwordStatus, setPasswordStatus] = useState<{
-    variant: "error" | "success"
-    message: string
-  } | null>(null)
   const [passwordBusy, setPasswordBusy] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [usernameInput, setUsernameInput] = useState(user.username)
   const [usernameBusy, setUsernameBusy] = useState(false)
-  const [usernameStatus, setUsernameStatus] = useState<{
-    variant: "error" | "success"
-    message: string
-  } | null>(null)
   const [isEditingUsername, setIsEditingUsername] = useState(false)
 
   useEffect(() => {
@@ -127,9 +119,7 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
     setAccountOpen(nextOpen)
     if (!nextOpen) {
       setPasswordForm({ current: "", next: "", confirm: "" })
-      setPasswordStatus(null)
       setPasswordBusy(false)
-      setUsernameStatus(null)
       setIsEditingUsername(false)
       setUsernameInput(user.username)
       setIsChangingPassword(false)
@@ -142,29 +132,19 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
 
   const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setPasswordStatus(null)
 
     if (!passwordForm.current || !passwordForm.next || !passwordForm.confirm) {
-      setPasswordStatus({
-        variant: "error",
-        message: "Please fill out all password fields.",
-      })
+      toast.error("Please fill out all password fields.")
       return
     }
 
     if (passwordForm.next !== passwordForm.confirm) {
-      setPasswordStatus({
-        variant: "error",
-        message: "New password and confirmation do not match.",
-      })
+      toast.error("New password and confirmation do not match.")
       return
     }
 
     if (passwordForm.current === passwordForm.next) {
-      setPasswordStatus({
-        variant: "error",
-        message: "New password must be different from the current password.",
-      })
+      toast.error("New password must be different from the current password.")
       return
     }
 
@@ -181,38 +161,23 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      setPasswordStatus({
-        variant: "error",
-        message: data.error ?? "Unable to update password.",
-      })
+      toast.error(data.error ?? "Unable to update password.")
       return
     }
 
-    setPasswordStatus({
-      variant: "success",
-      message: "Password updated successfully.",
-    })
+    toast.success("Password updated successfully.")
     setPasswordForm({ current: "", next: "", confirm: "" })
-    setTimeout(() => {
-      setIsChangingPassword(false)
-      setPasswordStatus(null)
-    }, 2000)
+    setIsChangingPassword(false)
   }
 
   const handleCancelPasswordChange = () => {
     setIsChangingPassword(false)
     setPasswordForm({ current: "", next: "", confirm: "" })
-    setPasswordStatus(null)
   }
 
   const handleUsernameSubmit = async () => {
-    setUsernameStatus(null)
-
     if (!usernameInput.trim()) {
-      setUsernameStatus({
-        variant: "error",
-        message: "Username cannot be empty.",
-      })
+      toast.error("Username cannot be empty.")
       return
     }
 
@@ -232,10 +197,7 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      setUsernameStatus({
-        variant: "error",
-        message: data.error ?? "Unable to update username.",
-      })
+      toast.error(data.error ?? "Unable to update username.")
       return
     }
 
@@ -244,16 +206,12 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
     onUserUpdate?.({ ...user, username: nextUsername })
     setUsernameInput(nextUsername)
     setIsEditingUsername(false)
-    setUsernameStatus({
-      variant: "success",
-      message: "Username updated successfully.",
-    })
+    toast.success("Username updated successfully.")
   }
 
   const handleCancelUsernameEdit = () => {
     setIsEditingUsername(false)
     setUsernameInput(user.username)
-    setUsernameStatus(null)
   }
 
   return (
@@ -348,14 +306,6 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
                   </div>
                 )}
               </div>
-              {usernameStatus && (
-                <div className="sm:col-span-2">
-                  <AlertCard
-                    message={usernameStatus.message}
-                    variant={usernameStatus.variant}
-                  />
-                </div>
-              )}
               <div className="space-y-1.5">
                 <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium uppercase tracking-wide">
                   <IconShieldCheck className="h-3.5 w-3.5" />
@@ -477,12 +427,6 @@ export function AccountModal({ user, media, onUserUpdate }: AccountModalProps) {
                         />
                       </Field>
                     </FieldGroup>
-                    {passwordStatus && (
-                      <AlertCard
-                        message={passwordStatus.message}
-                        variant={passwordStatus.variant}
-                      />
-                    )}
                     <div className="flex items-center justify-end gap-2">
                       <Button
                         type="button"

@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import { formatDate } from "@/lib/formatting"
 import { EmptyState } from "@/components/ui/empty-state"
-import { AlertCard } from "@/components/ui/alert-card"
 import {
   IconArrowLeft,
   IconBan,
@@ -60,11 +60,9 @@ type AdminUsersClientProps = {
 export default function AdminUsersClient({ users }: AdminUsersClientProps) {
   const [items, setItems] = useState(users)
   const [busyId, setBusyId] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
 
   const handleBanUser = async (userId: string, currentRole: number) => {
     setBusyId(userId)
-    setMessage(null)
 
     const response = await fetch(`/api/admin/users/${userId}/ban`, {
       method: "POST",
@@ -74,20 +72,18 @@ export default function AdminUsersClient({ users }: AdminUsersClientProps) {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      setMessage(data.error ?? "Failed to update user status.")
+      toast.error(data.error ?? "Failed to update user status.")
       return
     }
 
     const data = await response.json()
-    setMessage(data.message)
+    toast.success(data.message)
 
     setItems((prev) =>
       prev.map((user) =>
         user.id === userId ? { ...user, role: data.role } : user
       )
     )
-
-    setTimeout(() => setMessage(null), 3000)
   }
 
   const stats = {
@@ -122,8 +118,6 @@ export default function AdminUsersClient({ users }: AdminUsersClientProps) {
     )
   }
 
-  const messageIsError = message?.toLowerCase().includes("fail") ?? false
-
   return (
     <main className="bg-background text-foreground min-h-screen">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8 lg:py-12">
@@ -155,13 +149,6 @@ export default function AdminUsersClient({ users }: AdminUsersClientProps) {
             </Button>
           </div>
         </header>
-
-        {message && (
-          <AlertCard
-            message={message}
-            variant={messageIsError ? "error" : "success"}
-          />
-        )}
 
         <section className="grid gap-6 md:grid-cols-4">
           <Card className="border-2">

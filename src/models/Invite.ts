@@ -4,6 +4,7 @@ const InviteSchema = new Schema(
   {
     code: { type: String, required: true, unique: true, trim: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    ownedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     usedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     usedAt: { type: Date, default: null },
   },

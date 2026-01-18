@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { EmptyState } from "@/components/ui/empty-state"
 import { MediaCard } from "@/features/media"
-import { AlertCard } from "@/components/ui/alert-card"
 import { ImageModal } from "@/components/ui/image-modal"
 import { AccountModal } from "./account-modal"
+import { InviteModal } from "./invite-modal"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import {
   IconKey,
@@ -52,12 +53,19 @@ type MediaItem = {
   createdAt: string
 }
 
+type InviteItem = {
+  id: string
+  code: string
+  createdAt: string
+}
+
 type DashboardClientProps = {
   user: DashboardUser
   media: MediaItem[]
+  invites: InviteItem[]
 }
 
-export default function DashboardClient({ user, media }: DashboardClientProps) {
+export default function DashboardClient({ user, media, invites }: DashboardClientProps) {
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState(user)
   const [items, setItems] = useState(media)
@@ -67,7 +75,6 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
   const [uploadKey, setUploadKey] = useState<string | null>(null)
   const [origin, setOrigin] = useState("")
   const [busyId, setBusyId] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
   const [modalImageIndex, setModalImageIndex] = useState<number | null>(null)
   const { copyToClipboard } = useCopyToClipboard()
 
@@ -98,7 +105,7 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
   const regenerateUploadKey = async () => {
     const response = await fetch("/api/user/upload-key", { method: "POST" })
     if (!response.ok) {
-      setMessage("Failed to regenerate key.")
+      toast.error("Failed to regenerate key.")
       return
     }
     const data = await response.json()
@@ -119,7 +126,7 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
     const response = await fetch(`/api/media/${id}`, { method: "DELETE" })
     setBusyId(null)
     if (!response.ok) {
-      setMessage("Failed to delete upload.")
+      toast.error("Failed to delete upload.")
       return
     }
     setItems((prev) => prev.filter((item) => item.id !== id))
@@ -134,7 +141,7 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
     })
     setBusyId(null)
     if (!response.ok) {
-      setMessage("Failed to update visibility.")
+      toast.error("Failed to update visibility.")
       return
     }
     setItems((prev) =>
@@ -185,6 +192,7 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <InviteModal invites={invites} />
             {currentUser.role === 1 && (
               <>
                 <Button variant="outline" asChild>
@@ -207,8 +215,6 @@ export default function DashboardClient({ user, media }: DashboardClientProps) {
             </Button>
           </div>
         </header>
-
-        {message && <AlertCard message={message} variant="error" />}
 
         <section className="grid gap-6 lg:grid-cols-2">
           <Card className="border-2">

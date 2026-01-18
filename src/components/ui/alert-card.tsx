@@ -17,7 +17,7 @@ export function AlertCard({ message, variant = "info", icon: Icon }: AlertCardPr
   return (
     <Card className={cn("border-2", variantStyles[variant])}>
       <CardContent className={cn("pt-6", Icon && "flex items-center gap-3")}>
-        {Icon && <Icon className="text-muted-foreground h-5 w-5 flex-shrink-0" />}
+        {Icon && <Icon className="text-muted-foreground h-5 w-5 shrink-0" />}
         <p className="text-sm">{message}</p>
       </CardContent>
     </Card>
