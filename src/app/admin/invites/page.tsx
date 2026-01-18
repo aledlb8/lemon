@@ -1,3 +1,4 @@
+import mongoose from "mongoose"
 import { redirect } from "next/navigation"
 
 import { dbConnect } from "@/lib/db"
@@ -18,17 +19,21 @@ export default async function AdminInvitesPage() {
   const invites = await InviteModel.find()
     .sort({ createdAt: -1 })
     .limit(100)
+    .populate("usedBy", "username")
     .lean()
 
   return (
     <AdminInvitesClient
-      invites={invites.map((invite) => ({
-        id: invite._id.toString(),
-        code: invite.code,
-        createdAt: invite.createdAt.toISOString(),
-        usedAt: invite.usedAt ? invite.usedAt.toISOString() : null,
-        usedBy: invite.usedBy?.toString() ?? null,
-      }))}
+      invites={invites.map((invite) => {
+        const usedByUser = invite.usedBy as { _id: mongoose.Types.ObjectId; username: string } | null
+        return {
+          id: invite._id.toString(),
+          code: invite.code,
+          createdAt: invite.createdAt.toISOString(),
+          usedAt: invite.usedAt ? invite.usedAt.toISOString() : null,
+          usedByUsername: usedByUser?.username ?? null,
+        }
+      })}
     />
   )
 }

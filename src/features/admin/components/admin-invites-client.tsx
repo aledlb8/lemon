@@ -2,27 +2,43 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { formatDate } from "@/lib/formatting"
 import { EmptyState } from "@/components/ui/empty-state"
 import { AlertCard } from "@/components/ui/alert-card"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import {
   IconArrowLeft,
   IconCircleCheck,
-  IconCircleX,
-  IconClock,
   IconCopy,
+  IconDotsVertical,
+  IconExternalLink,
   IconKey,
   IconPlus,
   IconShieldCheck,
+  IconTrash,
 } from "@tabler/icons-react"
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
@@ -31,7 +47,7 @@ type InviteItem = {
   code: string
   createdAt: string
   usedAt: string | null
-  usedBy: string | null
+  usedByUsername: string | null
 }
 
 type AdminInvitesClientProps = {
@@ -41,6 +57,7 @@ type AdminInvitesClientProps = {
 export default function AdminInvitesClient({ invites }: AdminInvitesClientProps) {
   const [items, setItems] = useState(invites)
   const [loading, setLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const { copyToClipboard } = useCopyToClipboard()
@@ -53,6 +70,7 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
 
   const createInvite = async () => {
     setLoading(true)
+    setMessage(null)
     const response = await fetch("/api/admin/invites", { method: "POST" })
     setLoading(false)
 
@@ -70,11 +88,32 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
           code: invite.code,
           createdAt: invite.createdAt,
           usedAt: null,
-          usedBy: null,
+          usedByUsername: null,
         },
         ...prev,
       ])
     }
+  }
+
+  const deleteInvite = async (inviteId: string) => {
+    setDeletingId(inviteId)
+    setMessage(null)
+
+    const response = await fetch(`/api/admin/invites/${inviteId}`, {
+      method: "DELETE",
+    })
+
+    setDeletingId(null)
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      setMessage(data.error ?? "Failed to delete invite.")
+      return
+    }
+
+    setItems((prev) => prev.filter((invite) => invite.id !== inviteId))
+    setMessage("Invite deleted successfully.")
+    setTimeout(() => setMessage(null), 3000)
   }
 
   const unusedCount = items.filter((invite) => !invite.usedAt).length
@@ -83,7 +122,7 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
 
   return (
     <main className="bg-background text-foreground min-h-screen">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8 lg:py-12">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8 lg:py-12">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <h1 className="text-3xl font-semibold tracking-tight">Admin invites</h1>
@@ -113,136 +152,195 @@ export default function AdminInvitesClient({ invites }: AdminInvitesClientProps)
           </div>
         </header>
 
-        {message && <AlertCard message={message} variant={messageIsError ? "error" : "info"} />}
+        {message && (
+          <AlertCard
+            message={message}
+            variant={messageIsError ? "error" : "success"}
+          />
+        )}
 
-        <section className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2 border-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <IconPlus className="h-5 w-5" />
-                Create invite
-              </CardTitle>
-              <CardDescription>
-                Issue a fresh code for onboarding new users. Each code is single-use.
-              </CardDescription>
-            </CardHeader>
+        <section className="grid gap-6 md:grid-cols-4">
+          <Card className="border-2 md:col-span-2">
             <CardContent>
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    Create invite
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Issue a fresh code for onboarding new users
+                  </p>
+                </div>
                 <Button onClick={createInvite} disabled={loading} size="lg" className="font-semibold">
                   <IconPlus />
                   {loading ? "Creating..." : "New invite"}
                 </Button>
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <IconKey className="h-4 w-4" />
-                  <span className="text-sm font-medium">{unusedCount} available</span>
-                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <IconKey className="h-5 w-5" />
-                Stats
-              </CardTitle>
-              <CardDescription>Track usage at a glance</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="flex items-center justify-between border-b pb-4">
-                <span className="text-muted-foreground text-sm font-medium">Total</span>
-                <span className="text-3xl font-bold">{items.length}</span>
-              </div>
+            <CardContent>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-sm font-medium">Available</span>
-                <Badge variant="default" className="text-base px-3 py-1.5">{unusedCount}</Badge>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    Available
+                  </p>
+                  <p className="text-3xl font-bold">{unusedCount}</p>
+                </div>
+                <IconKey className="text-primary h-8 w-8" />
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardContent>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-sm font-medium">Used</span>
-                <Badge variant="secondary" className="text-base px-3 py-1.5">{usedCount}</Badge>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    Used
+                  </p>
+                  <p className="text-3xl font-bold">{usedCount}</p>
+                </div>
+                <IconCircleCheck className="text-chart-3 h-8 w-8" />
               </div>
             </CardContent>
           </Card>
         </section>
 
-        <section className="flex items-center justify-between border-b pb-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-              <IconKey className="h-6 w-6" />
-              Recent invites
-            </h2>
-            <p className="text-muted-foreground text-sm">
+        <Card className="border-2">
+          <CardHeader>
+            <CardTitle>All invites</CardTitle>
+            <CardDescription>
               {items.length} invite{items.length === 1 ? "" : "s"} issued
-            </p>
-          </div>
-        </section>
-
-        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {items.length === 0 && (
-            <EmptyState
-              icon={IconKey}
-              title="No invites yet"
-              description="Create a code to onboard your first user"
-            />
-          )}
-          {items.map((invite) => (
-            <Card
-              key={invite.id}
-              className={`group transition-all duration-200 hover:shadow-lg border-2 ${invite.usedAt ? "opacity-75" : "hover:border-primary/50"
-                }`}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <Badge
-                    variant={invite.usedAt ? "secondary" : "default"}
-                    className="gap-1.5 text-xs font-semibold"
-                  >
-                    {invite.usedAt ? (
-                      <IconCircleCheck className="h-3.5 w-3.5" />
-                    ) : (
-                      <IconCircleCheck className="h-3.5 w-3.5" />
-                    )}
-                    {invite.usedAt ? "Used" : "Available"}
-                  </Badge>
-                  {invite.usedAt && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <IconCircleCheck className="h-3.5 w-3.5" />
-                      <span className="text-xs">
-                        Redeemed {new Date(invite.usedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <IconClock className="h-3.5 w-3.5" />
-                  <span className="text-xs">
-                    Created {new Date(invite.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-6">
-                <div>
-                  <p className="text-muted-foreground text-xs font-medium mb-2">Invite code</p>
-                  <div className="bg-muted/70 border rounded-lg p-3 transition-colors hover:bg-muted flex items-start justify-between gap-2">
-                    <code className="font-mono text-sm break-all select-all flex-1">
-                      {invite.code}
-                    </code>
-                    <Button
-                      onClick={() => handleCopy(invite.id, invite.code)}
-                      aria-label="Copy invite code"
-                    >
-                      {copiedId === invite.id ? (
-                        <IconCircleCheck className="h-4 w-4" />
-                      ) : (
-                        <IconCopy />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </section>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {items.length === 0 ? (
+              <EmptyState
+                icon={IconKey}
+                title="No invites yet"
+                description="Create a code to onboard your first user"
+              />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                      Invite code
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                      Used by
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                      Created
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                      Used at
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-right text-xs font-medium uppercase tracking-wide">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((invite) => (
+                    <TableRow key={invite.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <code className="bg-muted rounded px-2 py-1 font-mono text-sm">
+                            {invite.code}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleCopy(invite.id, invite.code)}
+                          >
+                            {copiedId === invite.id ? (
+                              <IconCircleCheck className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <IconCopy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={invite.usedAt ? "secondary" : "default"}>
+                          {invite.usedAt ? "Used" : "Available"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {invite.usedByUsername ? (
+                          <Link
+                            href={`/u/${invite.usedByUsername}`}
+                            className="text-primary hover:underline text-sm font-medium hover:underline-offset-2"
+                          >
+                            {invite.usedByUsername}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {formatDate(new Date(invite.createdAt))}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {invite.usedAt
+                          ? formatDate(new Date(invite.usedAt))
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <IconDotsVertical className="h-4 w-4" />
+                                <span className="sr-only">More options</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleCopy(invite.id, invite.code)}
+                              >
+                                <IconCopy className="h-4 w-4" />
+                                Copy code
+                              </DropdownMenuItem>
+                              {invite.usedByUsername && (
+                                <DropdownMenuItem asChild>
+                                  <Link target="_blank" href={`/u/${invite.usedByUsername}`}>
+                                    <IconExternalLink className="h-4 w-4" />
+                                    View user profile
+                                  </Link>
+                                </DropdownMenuItem>
+                              )}
+                              {!invite.usedAt && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    variant="destructive"
+                                    onClick={() => deleteInvite(invite.id)}
+                                    disabled={deletingId === invite.id}
+                                  >
+                                    <IconTrash className="h-4 w-4" />
+                                    {deletingId === invite.id ? "Deleting..." : "Delete invite"}
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </main>
   )
