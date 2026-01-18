@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation"
-import UserGalleryClient from "@/components/user-gallery-client"
+import { UserGalleryClient } from "@/features/profile"
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, isAdmin } from "@/lib/auth"
 import { normalizeUsername } from "@/lib/validation"

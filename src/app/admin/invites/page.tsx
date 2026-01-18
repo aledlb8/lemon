@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, isAdmin } from "@/lib/auth"
 import { InviteModel } from "@/models/Invite"
-import AdminInvitesClient from "@/components/admin-invites-client"
+import { AdminInvitesClient } from "@/features/admin"
 
 export default async function AdminInvitesPage() {
   const user = await getSessionUser()

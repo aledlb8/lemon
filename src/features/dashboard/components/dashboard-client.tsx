@@ -4,10 +4,10 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { EmptyState } from "@/components/ui/empty-state"
-import { MediaCard } from "@/components/media-card"
+import { MediaCard } from "@/features/media"
 import { AlertCard } from "@/components/ui/alert-card"
 import { ImageModal } from "@/components/ui/image-modal"
-import { AccountModal } from "@/components/account-modal"
+import { AccountModal } from "./account-modal"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import {
   IconKey,

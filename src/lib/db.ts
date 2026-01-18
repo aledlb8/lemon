@@ -1,11 +1,5 @@
 import mongoose from "mongoose"
 
-const MONGODB_URI = process.env.MONGODB_URI ?? ""
-
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is not set")
-}
-
 type MongooseCache = {
   conn: typeof mongoose | null
   promise: Promise<typeof mongoose> | null
@@ -18,6 +12,14 @@ declare global {
 
 const cached = global.mongoose ?? { conn: null, promise: null }
 
+function getMongoUri() {
+  const uri = process.env.MONGODB_URI ?? ""
+  if (!uri) {
+    throw new Error("MONGODB_URI is not set")
+  }
+  return uri
+}
+
 export async function dbConnect() {
   if (cached.conn) {
     return cached.conn
@@ -25,7 +27,8 @@ export async function dbConnect() {
 
   if (!cached.promise) {
     mongoose.set("strictQuery", true)
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongooseInstance) => mongooseInstance)
+    const uri = getMongoUri()
+    cached.promise = mongoose.connect(uri).then((mongooseInstance) => mongooseInstance)
   }
 
   cached.conn = await cached.promise

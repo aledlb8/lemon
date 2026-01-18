@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { SelfHostModal } from "@/components/self-host-modal"
+import { SelfHostModal } from "./self-host-modal"
 
 export function LandingPageClient() {
   return (

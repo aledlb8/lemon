@@ -4,7 +4,7 @@ import { dbConnect } from "@/lib/db"
 import { getSessionUser, isAdmin } from "@/lib/auth"
 import { UserModel } from "@/models/User"
 import { InviteModel } from "@/models/Invite"
-import AdminUsersClient from "@/components/admin-users-client"
+import { AdminUsersClient } from "@/features/admin"
 
 export default async function AdminUsersPage() {
   const user = await getSessionUser()

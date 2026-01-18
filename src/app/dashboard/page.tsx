@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { dbConnect } from "@/lib/db"
 import { getSessionUser, ROLE_BANNED } from "@/lib/auth"
 import { MediaModel } from "@/models/Media"
-import DashboardClient from "@/components/dashboard-client"
+import { DashboardClient } from "@/features/dashboard"
 
 export default async function DashboardPage() {
   const user = await getSessionUser()

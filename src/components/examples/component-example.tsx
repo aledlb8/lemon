@@ -2,10 +2,7 @@
 
 import * as React from "react"
 
-import {
-  Example,
-  ExampleWrapper,
-} from "@/components/example"
+import { Example, ExampleWrapper } from "./example"
 import {
   AlertDialog,
   AlertDialogAction,

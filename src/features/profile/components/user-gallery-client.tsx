@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { EmptyState } from "@/components/ui/empty-state"
-import { MediaCard } from "@/components/media-card"
+import { MediaCard } from "@/features/media"
 import { ImageModal } from "@/components/ui/image-modal"
 import { IconUpload } from "@tabler/icons-react"
 
