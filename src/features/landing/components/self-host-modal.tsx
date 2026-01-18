@@ -124,70 +124,13 @@ APP_ORIGIN="https://your-domain.com"`,
             <Card className="border-2">
               <CardContent className="space-y-4">
                 <div className="space-y-1">
-                  <div className="font-semibold text-sm">3. Configure environment</div>
-                  <p className="text-muted-foreground text-xs">
-                    Create a <code className="text-foreground text-xs">.env.local</code> file with these variables
-                  </p>
-                </div>
-                <CodeBlock code={commands.env} label=".env.local" />
-                <div className="bg-muted/20 space-y-2 rounded-lg border p-3 text-xs">
-                  <div className="font-medium">Environment variables:</div>
-                  <ul className="text-muted-foreground space-y-1 pl-4">
-                    <li className="list-disc">
-                      <span className="text-foreground font-medium">MONGODB_URI:</span> Your MongoDB connection string
-                    </li>
-                    <li className="list-disc">
-                      <span className="text-foreground font-medium">BLOB_READ_WRITE_TOKEN:</span> Vercel Blob storage token
-                    </li>
-                    <li className="list-disc">
-                      <span className="text-foreground font-medium">APP_ORIGIN:</span> Your deployment URL (optional)
-                    </li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2">
-              <CardContent className="space-y-4">
-                <div className="space-y-1">
-                  <div className="font-semibold text-sm">4. Run the application</div>
+                  <div className="font-semibold text-sm">3. Run the application</div>
                   <p className="text-muted-foreground text-xs">
                     Start in development mode or build for production
                   </p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <CodeBlock code={commands.dev} label="Development" />
-                  </div>
-                  <div>
-                    <CodeBlock code={commands.build} label="Production" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2">
-              <CardContent className="space-y-3">
-                <div className="font-semibold text-sm">5. Set up admin access</div>
-                <div className="bg-muted/20 space-y-2 rounded-lg border p-3 text-xs">
-                  <p className="text-muted-foreground">
-                    After registering your first user, manually update the <code className="text-foreground">role</code> field in MongoDB:
-                  </p>
-                  <ul className="text-muted-foreground space-y-1 pl-4">
-                    <li className="list-disc">
-                      <code className="text-foreground">role: 1</code> = Admin
-                    </li>
-                    <li className="list-disc">
-                      <code className="text-foreground">role: 0</code> = Normal user
-                    </li>
-                    <li className="list-disc">
-                      <code className="text-foreground">role: -1</code> = Banned
-                    </li>
-                  </ul>
-                  <p className="text-muted-foreground pt-2">
-                    Admins can generate invite codes from <code className="text-foreground">/admin/invites</code>
-                  </p>
-                </div>
+                <CodeBlock code={commands.dev} label="Development" />
+                <CodeBlock code={commands.build} label="Production" />
               </CardContent>
             </Card>
           </div>
