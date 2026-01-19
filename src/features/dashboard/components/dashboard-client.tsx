@@ -10,6 +10,7 @@ import { ImageModal } from "@/components/ui/image-modal"
 import { AccountModal } from "./account-modal"
 import { InviteModal } from "./invite-modal"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
+import { useMediaPrefetch } from "@/features/media/hooks/use-media-prefetch"
 import {
   IconKey,
   IconEye,
@@ -81,6 +82,10 @@ export default function DashboardClient({ user, media, invites }: DashboardClien
   const mediaItems = items.filter((item) =>
     item.contentType.startsWith("image/") || item.contentType.startsWith("video/")
   )
+  const { prefetchedUrls, prefetchedIds } = useMediaPrefetch(mediaItems, {
+    maxConcurrent: 3,
+    maxItems: mediaItems.length,
+  })
 
   useEffect(() => {
     setOrigin(window.location.origin)
@@ -343,6 +348,8 @@ export default function DashboardClient({ user, media, invites }: DashboardClien
               onCopyLink={handleCopyLink}
               onImageClick={handleImageClick}
               isDeleting={busyId === item.id}
+              previewUrl={prefetchedUrls[item.id]}
+              disableAutoPreview={prefetchedIds.has(item.id)}
             />
           ))}
         </section>
@@ -351,9 +358,10 @@ export default function DashboardClient({ user, media, invites }: DashboardClien
       {modalImageIndex !== null && mediaItems[modalImageIndex] && (
         <ImageModal
           isOpen={true}
-          imageUrl={`/api/media/${mediaItems[modalImageIndex].id}/download`}
+          mediaId={mediaItems[modalImageIndex].id}
           imageName={mediaItems[modalImageIndex].originalName}
           contentType={mediaItems[modalImageIndex].contentType}
+          prefetchedUrl={prefetchedUrls[mediaItems[modalImageIndex].id]}
           onClose={handleModalClose}
           onPrevious={handleModalPrevious}
           onNext={handleModalNext}

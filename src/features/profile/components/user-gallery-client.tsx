@@ -4,6 +4,7 @@ import { useState } from "react"
 import { EmptyState } from "@/components/ui/empty-state"
 import { MediaCard } from "@/features/media"
 import { ImageModal } from "@/components/ui/image-modal"
+import { useMediaPrefetch } from "@/features/media/hooks/use-media-prefetch"
 import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import { IconUpload } from "@tabler/icons-react"
 
@@ -27,6 +28,10 @@ export default function UserGalleryClient({ uploads, canSeePrivate }: UserGaller
   const mediaItems = uploads.filter((item) =>
     item.contentType.startsWith("image/") || item.contentType.startsWith("video/")
   )
+  const { prefetchedUrls, prefetchedIds } = useMediaPrefetch(mediaItems, {
+    maxConcurrent: 3,
+    maxItems: mediaItems.length,
+  })
 
   const handleImageClick = (id: string) => {
     const index = mediaItems.findIndex((item) => item.id === id)
@@ -75,6 +80,8 @@ export default function UserGalleryClient({ uploads, canSeePrivate }: UserGaller
             showVisibility={canSeePrivate}
             onCopyLink={handleCopyLink}
             onImageClick={handleImageClick}
+            previewUrl={prefetchedUrls[item.id]}
+            disableAutoPreview={prefetchedIds.has(item.id)}
           />
         ))}
       </section>
@@ -82,9 +89,10 @@ export default function UserGalleryClient({ uploads, canSeePrivate }: UserGaller
       {modalImageIndex !== null && mediaItems[modalImageIndex] && (
         <ImageModal
           isOpen={true}
-          imageUrl={`/api/media/${mediaItems[modalImageIndex].id}/download`}
+          mediaId={mediaItems[modalImageIndex].id}
           imageName={mediaItems[modalImageIndex].originalName}
           contentType={mediaItems[modalImageIndex].contentType}
+          prefetchedUrl={prefetchedUrls[mediaItems[modalImageIndex].id]}
           onClose={handleModalClose}
           onPrevious={handleModalPrevious}
           onNext={handleModalNext}

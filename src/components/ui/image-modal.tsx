@@ -1,14 +1,15 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { IconX, IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 
 interface ImageModalProps {
   isOpen: boolean
-  imageUrl: string
+  mediaId: string
   imageName: string
   contentType: string
+  prefetchedUrl?: string | null
   onClose: () => void
   onPrevious?: () => void
   onNext?: () => void
@@ -18,9 +19,10 @@ interface ImageModalProps {
 
 export function ImageModal({
   isOpen,
-  imageUrl,
+  mediaId,
   imageName,
   contentType,
+  prefetchedUrl,
   onClose,
   onPrevious,
   onNext,
@@ -28,6 +30,50 @@ export function ImageModal({
   hasNext = false,
 }: ImageModalProps) {
   const isVideo = contentType.startsWith("video/")
+  const [mediaUrl, setMediaUrl] = useState<string | null>(prefetchedUrl ?? null)
+  const [hasError, setHasError] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+    if (prefetchedUrl) {
+      setMediaUrl(prefetchedUrl)
+      setHasError(false)
+      return
+    }
+    setMediaUrl(null)
+    setHasError(false)
+    const controller = new AbortController()
+    let objectUrl: string | null = null
+
+    const loadMedia = async () => {
+      try {
+        const response = await fetch(`/api/media/${mediaId}/download`, {
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          throw new Error("Failed to load media.")
+        }
+        const blob = await response.blob()
+        if (controller.signal.aborted) return
+        objectUrl = URL.createObjectURL(blob)
+        setMediaUrl(objectUrl)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        console.error("Failed to load media:", error)
+        setHasError(true)
+      }
+    }
+
+    loadMedia()
+
+    return () => {
+      controller.abort()
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl)
+      }
+    }
+  }, [isOpen, mediaId, prefetchedUrl])
+
   useEffect(() => {
     if (!isOpen) return
 
@@ -105,21 +151,29 @@ export function ImageModal({
         className="relative flex flex-col items-center max-h-[90vh] max-w-[90vw]"
         onClick={(e) => e.stopPropagation()}
       >
-        {isVideo ? (
-          <video
-            src={imageUrl}
-            controls
-            autoPlay
-            className="max-h-[85vh] max-w-[90vw] object-contain"
-          >
-            Your browser does not support the video tag.
-          </video>
+        {mediaUrl ? (
+          isVideo ? (
+            <video
+              src={mediaUrl}
+              controls
+              autoPlay
+              className="max-h-[85vh] max-w-[90vw] object-contain"
+            >
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <img
+              src={mediaUrl}
+              alt={imageName}
+              className="max-h-[85vh] max-w-[90vw] object-contain"
+            />
+          )
         ) : (
-          <img
-            src={imageUrl}
-            alt={imageName}
-            className="max-h-[85vh] max-w-[90vw] object-contain"
-          />
+          <div className="bg-background/20 flex min-h-[240px] min-w-[240px] items-center justify-center rounded-lg border border-white/10">
+            <p className="text-muted-foreground text-sm">
+              {hasError ? "Preview unavailable" : "Loading preview..."}
+            </p>
+          </div>
         )}
         <div className="bg-background/90 w-full p-4 text-center backdrop-blur-sm mt-2 rounded-lg">
           <p className="text-sm font-medium truncate">{imageName}</p>

@@ -48,7 +48,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   headers.set("content-type", response.headers.get("content-type") ?? media.contentType)
   headers.set(
     "content-disposition",
-    `inline; filename="${safeHeaderFilename(media.originalName)}"`
+    `attachment; filename="${safeHeaderFilename(media.originalName)}"`
   )
   headers.set("cache-control", "no-store")
 

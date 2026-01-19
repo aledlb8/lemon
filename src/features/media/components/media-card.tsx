@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import {
   Card,
@@ -32,6 +32,9 @@ interface MediaCardProps {
   onCopyLink?: (id: string) => void
   onImageClick?: (id: string) => void
   isDeleting?: boolean
+  previewUrl?: string | null
+  disableAutoPreview?: boolean
+  previewError?: boolean
 }
 
 export function MediaCard({
@@ -46,11 +49,87 @@ export function MediaCard({
   onCopyLink,
   onImageClick,
   isDeleting,
+  previewUrl,
+  disableAutoPreview = false,
+  previewError,
 }: MediaCardProps) {
   const isImage = contentType.startsWith("image/")
   const isVideo = contentType.startsWith("video/")
-  const downloadUrl = `/api/media/${id}/download`
   const fileExtension = originalName.split(".").pop() ?? "file"
+  const [internalPreviewUrl, setInternalPreviewUrl] = useState<string | null>(null)
+  const [internalPreviewError, setInternalPreviewError] = useState(false)
+  const previewRef = useRef<HTMLDivElement | null>(null)
+  const resolvedPreviewUrl = previewUrl ?? internalPreviewUrl
+  const resolvedPreviewError = previewError ?? internalPreviewError
+
+  useEffect(() => {
+    if (previewUrl && internalPreviewUrl) {
+      URL.revokeObjectURL(internalPreviewUrl)
+      setInternalPreviewUrl(null)
+    }
+  }, [previewUrl, internalPreviewUrl])
+
+  useEffect(() => {
+    if (!isImage && !isVideo) return
+    if (previewUrl || disableAutoPreview) return
+    setInternalPreviewUrl(null)
+    setInternalPreviewError(false)
+    const controller = new AbortController()
+    let objectUrl: string | null = null
+    let hasStarted = false
+
+    const loadPreview = async () => {
+      if (hasStarted) return
+      hasStarted = true
+      try {
+        const response = await fetch(`/api/media/${id}/download`, {
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          throw new Error("Failed to load preview.")
+        }
+        const blob = await response.blob()
+        if (controller.signal.aborted) return
+        objectUrl = URL.createObjectURL(blob)
+        setInternalPreviewUrl(objectUrl)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        console.error("Failed to load preview:", error)
+        setInternalPreviewError(true)
+      }
+    }
+
+    const node = previewRef.current
+    if (!node || typeof IntersectionObserver === "undefined") {
+      loadPreview()
+      return () => {
+        controller.abort()
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl)
+        }
+      }
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadPreview()
+          observer.disconnect()
+        }
+      },
+      { rootMargin: "200px" }
+    )
+
+    observer.observe(node)
+
+    return () => {
+      controller.abort()
+      observer.disconnect()
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl)
+      }
+    }
+  }, [id, isImage, isVideo, previewUrl, disableAutoPreview])
 
   const handleVisibilityToggle = () => {
     if (onVisibilityChange && visibility) {
@@ -74,37 +153,53 @@ export function MediaCard({
   return (
     <Card className="group overflow-hidden transition-all duration-200 hover:shadow-lg border-2 hover:border-primary/50">
       <div className="bg-muted/50 relative flex aspect-video items-center justify-center overflow-hidden">
-        {isImage ? (
-          <img
-            src={downloadUrl}
-            alt={originalName}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105 cursor-pointer"
-            loading="lazy"
-            onClick={() => onImageClick?.(id)}
-          />
-        ) : isVideo ? (
+        {isImage || isVideo ? (
           <div
-            className="relative h-full w-full cursor-pointer group/video"
+            ref={previewRef}
+            className={`relative h-full w-full cursor-pointer ${isVideo ? "group/video" : ""}`}
             onClick={() => onImageClick?.(id)}
           >
-            <video
-              src={downloadUrl}
-              className="h-full w-full object-cover"
-              muted
-              playsInline
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-black/40 via-transparent to-transparent">
-              <div className="bg-background/90 backdrop-blur-sm rounded-full p-3 transition-transform group-hover/video:scale-110 shadow-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-6 w-6 text-foreground"
-                >
-                  <path d="M8 5.14v14l11-7-11-7z" />
-                </svg>
+            {resolvedPreviewUrl ? (
+              isVideo ? (
+                <video
+                  src={resolvedPreviewUrl}
+                  className="h-full w-full object-cover"
+                  muted
+                  playsInline
+                />
+              ) : (
+                <img
+                  src={resolvedPreviewUrl}
+                  alt={originalName}
+                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                />
+              )
+            ) : (
+              <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-2">
+                {isVideo ? (
+                  <IconVideo className="h-12 w-12" />
+                ) : (
+                  <IconPhoto className="h-12 w-12" />
+                )}
+                {resolvedPreviewError && (
+                  <span className="text-xs">Preview unavailable</span>
+                )}
               </div>
-            </div>
+            )}
+            {isVideo && (
+              <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-black/40 via-transparent to-transparent">
+                <div className="bg-background/90 backdrop-blur-sm rounded-full p-3 transition-transform group-hover/video:scale-110 shadow-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="h-6 w-6 text-foreground"
+                  >
+                    <path d="M8 5.14v14l11-7-11-7z" />
+                  </svg>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
