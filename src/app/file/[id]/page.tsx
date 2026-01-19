@@ -10,6 +10,8 @@ import { getBaseUrl } from "@/lib/http"
 import { isValidObjectId } from "@/lib/security"
 import { MediaModel } from "@/models/Media"
 import { UserModel } from "@/models/User"
+import { SecureDownloadButton } from "@/features/media/components/secure-download-button"
+import { SecureMediaPreview } from "@/features/media/components/secure-media-preview"
 import {
   Card,
   CardContent,
@@ -20,7 +22,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-  IconDownload,
   IconEye,
   IconEyeOff,
   IconArrowLeft,
@@ -64,9 +65,6 @@ export async function generateMetadata(
     new Request("http://localhost", { headers: new Headers(headerStore) })
   )
   const profileUrl = new URL(`/u/${username}`, baseUrl).toString()
-  const isImage = media.contentType.startsWith("image/")
-  const canEmbedImage = isImage && media.visibility === "public"
-  const imageUrl = canEmbedImage ? media.blobUrl : undefined
   const description = `${username} wasted ${formatSize(media.size)} uploading this.`
 
   return {
@@ -77,13 +75,11 @@ export async function generateMetadata(
       description,
       url: profileUrl,
       type: "article",
-      images: imageUrl ? [{ url: imageUrl }] : undefined,
     },
     twitter: {
-      card: imageUrl ? "summary_large_image" : "summary",
+      card: "summary",
       title: username,
       description,
-      images: imageUrl ? [imageUrl] : undefined,
     },
   }
 }
@@ -113,7 +109,6 @@ export default async function FilePage({ params }: RouteContext) {
 
   const isImage = media.contentType.startsWith("image/")
   const isVideo = media.contentType.startsWith("video/")
-  const downloadUrl = `/api/media/${media._id.toString()}/download`
 
   return (
     <main className="bg-background text-foreground min-h-screen">
@@ -162,49 +157,18 @@ export default async function FilePage({ params }: RouteContext) {
                   </span>
                 </CardDescription>
               </div>
-              <Button asChild>
-                <Link href={downloadUrl}>
-                  <IconDownload />
-                  Download
-                </Link>
-              </Button>
+              <SecureDownloadButton
+                id={media._id.toString()}
+                fileName={media.originalName}
+              />
             </div>
           </CardHeader>
           <CardContent>
-            {isImage ? (
-              <div className="bg-muted/30 overflow-hidden rounded-lg border">
-                <img
-                  src={downloadUrl}
-                  alt={media.originalName}
-                  className="h-auto w-full"
-                />
-              </div>
-            ) : isVideo ? (
-              <div className="bg-muted/30 overflow-hidden rounded-lg border">
-                <video
-                  src={downloadUrl}
-                  controls
-                  className="h-auto w-full"
-                >
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            ) : (
-              <div className="bg-muted/30 flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-12 text-center">
-                <IconFileText className="text-muted-foreground h-16 w-16" />
-                <div className="space-y-2">
-                  <p className="text-muted-foreground font-medium">
-                    This file cannot be previewed
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    Use the download button to open it
-                  </p>
-                </div>
-                <Badge variant="outline" className="uppercase">
-                  {media.originalName.split(".").pop() ?? "file"}
-                </Badge>
-              </div>
-            )}
+            <SecureMediaPreview
+              id={media._id.toString()}
+              originalName={media.originalName}
+              contentType={media.contentType}
+            />
           </CardContent>
         </Card>
       </div>

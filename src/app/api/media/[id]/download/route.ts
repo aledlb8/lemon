@@ -31,19 +31,13 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: "Forbidden." }, { status: 403 })
   }
 
-  if (media.visibility === "public") {
-    return NextResponse.redirect(media.blobUrl)
-  }
-
   const token = process.env.BLOB_READ_WRITE_TOKEN
-  if (!token) {
+  if (media.visibility === "private" && !token) {
     return NextResponse.json({ error: "Missing blob token." }, { status: 500 })
   }
 
   const response = await fetch(media.blobUrl, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   })
 
   if (!response.ok || !response.body) {
