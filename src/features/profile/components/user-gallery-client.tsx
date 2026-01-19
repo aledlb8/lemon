@@ -4,6 +4,7 @@ import { useState } from "react"
 import { EmptyState } from "@/components/ui/empty-state"
 import { MediaCard } from "@/features/media"
 import { ImageModal } from "@/components/ui/image-modal"
+import { useCopyToClipboard } from "@/hooks/use-copy-to-clipboard"
 import { IconUpload } from "@tabler/icons-react"
 
 type MediaItem = {
@@ -21,6 +22,7 @@ type UserGalleryClientProps = {
 
 export default function UserGalleryClient({ uploads, canSeePrivate }: UserGalleryClientProps) {
   const [modalImageIndex, setModalImageIndex] = useState<number | null>(null)
+  const { copyToClipboard } = useCopyToClipboard()
 
   const mediaItems = uploads.filter((item) =>
     item.contentType.startsWith("image/") || item.contentType.startsWith("video/")
@@ -31,6 +33,11 @@ export default function UserGalleryClient({ uploads, canSeePrivate }: UserGaller
     if (index !== -1) {
       setModalImageIndex(index)
     }
+  }
+
+  const handleCopyLink = (id: string) => {
+    const link = `${window.location.origin}/file/${id}`
+    copyToClipboard(link)
   }
 
   const handleModalClose = () => {
@@ -66,6 +73,7 @@ export default function UserGalleryClient({ uploads, canSeePrivate }: UserGaller
             size={item.size}
             visibility={item.visibility}
             showVisibility={canSeePrivate}
+            onCopyLink={handleCopyLink}
             onImageClick={handleImageClick}
           />
         ))}
