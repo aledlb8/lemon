@@ -65,6 +65,11 @@ export async function generateMetadata(
     new Request("http://localhost", { headers: new Headers(headerStore) })
   )
   const profileUrl = new URL(`/u/${username}`, baseUrl).toString()
+  const isImage = media.contentType.startsWith("image/")
+  const canEmbedImage = isImage && media.visibility === "public"
+  const ogImageUrl = canEmbedImage
+    ? new URL(`/api/media/${media._id.toString()}/og`, baseUrl).toString()
+    : undefined
   const description = `${username} wasted ${formatSize(media.size)} uploading this.`
 
   return {
@@ -75,11 +80,13 @@ export async function generateMetadata(
       description,
       url: profileUrl,
       type: "article",
+      images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
     },
     twitter: {
-      card: "summary",
+      card: ogImageUrl ? "summary_large_image" : "summary",
       title: username,
       description,
+      images: ogImageUrl ? [ogImageUrl] : undefined,
     },
   }
 }
