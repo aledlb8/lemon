@@ -73,7 +73,7 @@ export async function generateMetadata(
   const description = `${username} wasted ${formatSize(media.size)} uploading this.`
 
   return {
-    title: username,
+    title: media.originalName,
     description,
     openGraph: {
       title: username,
